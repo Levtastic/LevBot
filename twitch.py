@@ -92,19 +92,14 @@ class Twitch:
         return fmt.format(data['stream'])
 
     async def get_stream_data(self, username):
-        session = aiohttp.ClientSession()
         url = self.twitch_url_base + username
 
-        async with session.get(url, headers=self.headers) as result:
-            if not 200 <= result.status < 300:
-                await session.close()
-                raise discord.HTTPException(result, 'Error fetching twitch api')
+        with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=self.headers) as result:
+                if not 200 <= result.status < 300:
+                    raise discord.HTTPException(result, 'Error fetching twitch api')
 
-            data = await result.json()
-
-        await session.close()
-
-        return data
+                return await result.json()
 
     def handle_message_counter(self, message, message_text):
         if not message:
