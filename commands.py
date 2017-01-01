@@ -125,7 +125,7 @@ class Commands:
         if not streamers:
             return await self.bot.send_message(message.channel, 'No streamers found')
 
-        fmt = 'Username: "{0[0]}", Channel: "{0[2]}", Format: "{0[3]}"'
+        fmt = 'Username: "{0[0]}", Channel: "{0[1]}", Format: "{0[2]}"'
         return_text = '\n'.join(fmt.format(streamer) for streamer in streamers)
 
         await self.bot.send_message(message.channel, '.\n' + return_text)
@@ -137,7 +137,7 @@ class Commands:
         if not streamer_messages:
             return await self.bot.send_message(message.channel, 'No streamer messages found')
 
-        fmt = 'Username: "{0[0]}", Channel: {0[2]}, Message: {0[3]}'
+        fmt = 'Username: "{0[0]}", Channel: {0[1]}, Message: {0[2]}'
         return_text = '\n'.join(fmt.format(msg) for msg in streamer_messages)
 
         await self.bot.send_message(message.channel, '.\n' + return_text)
