@@ -26,6 +26,10 @@ class Twitch:
                 logging.warning('HTTP error {0.status} in Twitch.loop() when fetching {0.url}'.format(ex.response))
                 await asyncio.sleep(60)
 
+            except aiohttp.ClientError as ex:
+                logging.warning('{} in Twitch.loop(): {!s}'.format(type(ex).__name__, ex))
+                await asyncio.sleep(60)
+
             except (KeyboardInterrupt, SystemExit, GeneratorExit):
                 raise
 
