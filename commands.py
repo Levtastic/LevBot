@@ -80,7 +80,7 @@ class Commands:
             return await self.bot.send_message(message.channel, 'No channels found')
 
         for server in channels.keys():
-            return_text += 'Server: {0.id}: {0.name}\n'.format(server)
+            return_text += 'Server: {}\n'.format(server)
             for channel in channels[server]:
                 return_text += '    {0.id}: {0.name}'.format(channel)
 
@@ -125,7 +125,7 @@ class Commands:
         if not streamers:
             return await self.bot.send_message(message.channel, 'No streamers found')
 
-        fmt = 'Username: "{0[0]}", Server: "{0[1]}", Channel: "{0[2]}", Format: "{0[3]}"'
+        fmt = 'Username: "{0[0]}", Channel: "{0[2]}", Format: "{0[3]}"'
         return_text = '\n'.join(fmt.format(streamer) for streamer in streamers)
 
         await self.bot.send_message(message.channel, '.\n' + return_text)
@@ -137,7 +137,7 @@ class Commands:
         if not streamer_messages:
             return await self.bot.send_message(message.channel, 'No streamer messages found')
 
-        fmt = 'Username: "{0[0]}", Server: {0[1]}, Channel: {0[2]}, Message: {0[3]}'
+        fmt = 'Username: "{0[0]}", Channel: {0[2]}, Message: {0[3]}'
         return_text = '\n'.join(fmt.format(msg) for msg in streamer_messages)
 
         await self.bot.send_message(message.channel, '.\n' + return_text)
@@ -166,7 +166,7 @@ class Commands:
 
     async def _add_streamer(self, attributes, message):
         try:
-            username, attr_1, attr_2, attr_3 = (attributes.split(' ', 3) + ['']*2)[:4]
+            username, channel_id, fmt, (attributes.split(' ', 2) + [''])[:3]
 
             if attr_1.lower() != 'here' and not attr_2:
                 raise ValueError('missing attribute')
@@ -174,21 +174,15 @@ class Commands:
         except ValueError:
             error = (
                 'Correct syntax:\n'
-                'add streamer <username> <server id> <channel id> <format (optional)>\n'
+                'add streamer <username> <channel id> <format (optional)>\n'
                 'add streamer <username> here <format (optional)>'
             )
             return await self.bot.send_message(message.channel, error)
 
-        if attr_1.lower() == 'here':
-            server_id = message.channel.server.id
+        if channel_id.lower() == 'here':
             channel_id = message.channel.id
-            fmt = attr_2
-        else:
-            server_id = attr_1
-            channel_id = attr_2
-            fmt = attr_3
 
-        if self.bot.db.add_streamer(username, server_id, channel_id, fmt):
+        if self.bot.db.add_streamer(username, channel_id, fmt):
             result = 'Streamer added'
         else:
             result = 'Streamer not added'
@@ -223,12 +217,12 @@ class Commands:
 
     async def _edit_streamer(self, attributes, message):
         try:
-            username, server_id, channel_id, fmt = (attributes.split(' ', 2) + [''])[:4]
+            username, channel_id, fmt = (attributes.split(' ', 2) + [''])[:3]
         except ValueError:
-            error = 'Correct syntax: edit streamer <username> <server id> <channel id> <format (optional)>'
+            error = 'Correct syntax: edit streamer <username> <channel id> <format (optional)>'
             return await self.bot.send_message(message.channel, error)
 
-        if self.bot.db.edit_streamer(username, server_id, channel_id, fmt):
+        if self.bot.db.edit_streamer(username, channel_id, fmt):
             result = 'Streamer edited'
         else:
             result = 'Streamer not edited'

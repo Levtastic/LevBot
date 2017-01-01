@@ -30,7 +30,6 @@ class Database:
                 (
                     id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
                     username TEXT NOT NULL,
-                    alert_server_did TEXT NOT NULL,
                     alert_channel_did TEXT NOT NULL,
                     alert_format TEXT NOT NULL
                 )
@@ -51,7 +50,6 @@ class Database:
                 (
                     id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
                     stream_alert_id INTEGER NOT NULL,
-                    server_did TEXT NOT NULL,
                     channel_did TEXT NOT NULL,
                     message_did TEXT NOT NULL
                 )
@@ -112,10 +110,8 @@ class Database:
                 SELECT
                     sa.id AS stream_alert_id,
                     sa.username,
-                    sa.alert_server_did,
                     sa.alert_channel_did,
                     sa.alert_format,
-                    sam.server_did AS message_server_did,
                     sam.channel_did AS message_channel_did,
                     sam.message_did
                 FROM
@@ -144,7 +140,7 @@ class Database:
             )
             return int(cursor.fetchone()[0]) > 0
 
-    def add_streamer(self, username, alert_server_did, alert_channel_did, alert_format=''):
+    def add_streamer(self, username, alert_channel_did, alert_format=''):
         if self.streamer_exists(username):
             return False
 
@@ -154,21 +150,20 @@ class Database:
                     stream_alerts
                     (
                         username,
-                        alert_server_did,
                         alert_channel_did,
                         alert_format
                     )
                 VALUES
-                    ( ?, ?, ?, ? )
+                    ( ?, ?, ? )
             """,
-                (username, alert_server_did, alert_channel_did, alert_format)
+                (username, alert_channel_did, alert_format)
             )
 
         self.database.commit()
 
         return True
 
-    def edit_streamer(self, username, alert_server_did, alert_channel_did, alert_format=''):
+    def edit_streamer(self, username, alert_channel_did, alert_format=''):
         if not self.streamer_exists(username):
             return False
 
@@ -177,7 +172,6 @@ class Database:
                 UPDATE
                     stream_alerts
                 SET
-                    alert_server_did = :alert_server_did,
                     alert_channel_did = :alert_channel_did,
                     alert_format = :alert_format
                 WHERE
@@ -185,7 +179,6 @@ class Database:
             """,
                 {
                     'username': username,
-                    'alert_server_did': alert_server_did,
                     'alert_channel_did': alert_channel_did,
                     'alert_format': alert_format
                 }
@@ -218,7 +211,6 @@ class Database:
             cursor.execute("""
                 SELECT
                     username,
-                    alert_server_did,
                     alert_channel_did,
                     alert_format
                 FROM
@@ -243,7 +235,7 @@ class Database:
             )
             return int(cursor.fetchone()[0]) > 0
 
-    def add_stream_alert_message(self, stream_alert_id, server_did, channel_did, message_did):
+    def add_stream_alert_message(self, stream_alert_id, channel_did, message_did):
         if self.stream_alert_message_exists(message_did):
             return False
 
@@ -253,14 +245,13 @@ class Database:
                     stream_alert_messages
                     (
                         stream_alert_id,
-                        server_did,
                         channel_did,
                         message_did
                     )
                 VALUES
-                    ( ?, ?, ?, ? )
+                    ( ?, ?, ? )
             """,
-                (stream_alert_id, server_did, channel_did, message_did)
+                (stream_alert_id, channel_did, message_did)
             )
 
         self.database.commit()
@@ -290,7 +281,6 @@ class Database:
             cursor.execute("""
                 SELECT
                     sa.username,
-                    sam.server_did,
                     sam.channel_did,
                     sam.message_did
                 FROM

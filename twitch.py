@@ -73,8 +73,7 @@ class Twitch:
 
     async def get_message(self, alert):
         try:
-            message_server = self.bot.get_server(alert['message_server_did'])
-            message_channel = message_server.get_channel(alert['message_channel_did'])
+            message_channel = self.bot.get_channel(alert['message_channel_did'])
             return await self.bot.get_message(message_channel, alert['message_did'])
         except (AttributeError, discord.NotFound):
             return None
@@ -140,13 +139,11 @@ class Twitch:
         return message_text and not message
 
     async def send_new_message(self, alert, message_text):
-        new_server = self.bot.get_server(alert['alert_server_did'])
-        new_channel = new_server.get_channel(alert['alert_channel_did'])
+        new_channel = self.bot.get_channel(alert['alert_channel_did'])
 
         new_message = await self.bot.send_message(new_channel, message_text)
         self.bot.db.add_stream_alert_message(
             alert['stream_alert_id'],
-            new_server.id,
             new_channel.id,
             new_message.id
         )
