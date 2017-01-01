@@ -30,8 +30,14 @@ class LevBot(discord.Client):
             await self.commands.do_command(command, message)
 
     def get_command(self, message):
-        if message.content.startswith(self.user.mention):
-            return message.content[len(self.user.mention):].lstrip()
+        prefixes = (
+            '<@{.id}>'.format(self.user), # standard mention
+            '<@!{.id}>'.format(self.user) # nicknamed mention
+        )
+
+        for prefix in prefixes:
+            if message.content.startswith(prefix):
+                return message.content[len(prefix):].lstrip()
 
         if message.channel.is_private:
             return message.content
