@@ -6,7 +6,7 @@ import settings
 
 
 class Twitch:
-    message_counter_limit = 10
+    message_counter_limit = 20
 
     def __init__(self, bot):
         self.bot = bot
