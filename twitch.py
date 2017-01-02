@@ -15,6 +15,8 @@ class Twitch:
         self.twitch_url_base = 'https://api.twitch.tv/kraken/streams/'
         self.headers = {'Client-ID': settings.twitch_client_id}
 
+        self.bot.loop.create_task(self.loop())
+
     async def loop(self):
         await self.bot.wait_until_ready()
 

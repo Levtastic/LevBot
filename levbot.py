@@ -7,6 +7,7 @@ from datetime import datetime
 from database import Database
 from twitch import Twitch
 from commands import Commands
+from console_input import ConsoleInput
 
 
 class LevBot(discord.Client):
@@ -15,13 +16,12 @@ class LevBot(discord.Client):
         self.db = Database()
         self.twitch = Twitch(self)
         self.commands = Commands(self)
-
-        self.loop.create_task(self.twitch.loop())
+        self.ci = ConsoleInput(self)
 
     async def on_ready(self):
-        logging.info('Connected!')
-        logging.info('Username: {0.name}#{0.discriminator}'.format(self.user))
-        logging.info('Invite URL: https://discordapp.com/oauth2/authorize?&client_id={}&scope=bot&permissions=0'.format(self.user.id))
+        print('Connected!')
+        print('Username: {0.name}#{0.discriminator}'.format(self.user))
+        print('Invite URL: https://discordapp.com/oauth2/authorize?&client_id={}&scope=bot&permissions=0'.format(self.user.id))
 
     async def on_message(self, message):
         command = self.get_command(message)
