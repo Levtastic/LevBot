@@ -1,22 +1,19 @@
 import os
 import logging
 import discord
+import modules
 import settings
 
 from datetime import datetime
-from database import Database
-from twitch import Twitch
-from commands import Commands
-from console_input import ConsoleInput
 
 
 class LevBot(discord.Client):
     def __init__(self):
         super().__init__()
-        self.db = Database()
-        self.twitch = Twitch(self)
-        self.commands = Commands(self)
-        self.ci = ConsoleInput(self)
+        self.db = modules.Database()
+        self.twitch = modules.Twitch(self)
+        self.commands = modules.Commands(self)
+        self.ci = modules.ConsoleInput(self)
 
     async def on_ready(self):
         print('Connected!')

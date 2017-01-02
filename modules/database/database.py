@@ -25,7 +25,7 @@ class Database:
     def build_database(self):
         query = ''
 
-        with open('database.sql', 'r') as file:
+        with open('modules/database/database.sql', 'r') as file:
             query = file.read()
 
         with closing(self.database.cursor()) as cursor:
