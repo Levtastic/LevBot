@@ -36,9 +36,6 @@ class Twitch:
                 raise
 
             except:
-                if self.bot.is_closed:
-                    raise
-
                 logging.exception('Error in Twitch.loop()')
                 await asyncio.sleep(300)
 
