@@ -52,7 +52,7 @@ class LevBot(discord.Client):
         return False
 
 
-if __name__ == '__main__':
+def set_up_logging():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -71,6 +71,9 @@ if __name__ == '__main__':
     streamhandler.setLevel(logging.ERROR)
     streamhandler.setFormatter(formatter)
     logger.addHandler(streamhandler)
+
+if __name__ == '__main__':
+    set_up_logging()
 
     bot = LevBot()
     bot.run(settings.bot_token)
