@@ -15,7 +15,7 @@ class ConsoleInput:
 
     async def loop(self):
         await self.bot.wait_until_ready()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0) # let other loops begin before this one
 
         while not self.bot.is_closed:
             await self.wait_until_not_executing()
@@ -23,7 +23,7 @@ class ConsoleInput:
 
             if message == 'exit':
                 print('Shutting down!')
-                return await self.bot.close()
+                return await self.bot.logout()
 
             try:
                 self.latest_code = (
@@ -49,7 +49,7 @@ class ConsoleInput:
 
     async def wait_until_not_executing(self):
         while self.executing:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
 
     async def get_console_input(self):
         lines = []
