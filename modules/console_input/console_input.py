@@ -55,7 +55,7 @@ class ConsoleInput:
         lines = []
 
         while not self.bot.is_closed:
-            line = await self.bot.loop.run_in_executor(None, lambda: input('> '))
+            line = await self.bot.loop.run_in_executor(None, input, '> ')
 
             command = line.lower()
 
