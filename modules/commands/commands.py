@@ -201,6 +201,8 @@ class Commands:
         else:
             result = 'Admin not added'
 
+        await self.bot.send_message(message.channel, result)
+
     async def _add_alias(self, attributes, message):
         try:
             command, alias = attributes.split(' ', 1)
