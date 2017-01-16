@@ -1,4 +1,7 @@
+import traceback
 import asyncio
+
+from concurrent.futures import CancelledError
 
 
 class ConsoleInput:
@@ -6,7 +9,6 @@ class ConsoleInput:
         self.bot = bot
 
         self.executing = False
-        self.latest_code = ''
         self.commands = (
             'exit',
         )
@@ -23,29 +25,25 @@ class ConsoleInput:
 
             if message == 'exit':
                 print('Shutting down!')
-                return await self.bot.logout()
+                await self.bot.logout()
+                raise KeyboardInterrupt()
 
             try:
-                self.latest_code = (
-                    'async def inner_code(bot):\n' +
-                    '    {}\n'.format('\n    '.join(line for line in message.split('\n'))) +
-                    'fut = asyncio.ensure_future(inner_code(self.bot))\n' +
+                exec(
+                    'async def console(bot):\n' +
+                    ' {}\n'.format('\n '.join(line for line in message.split('\n'))) +
+                    'fut = asyncio.ensure_future(console(self.bot))\n' +
                     'fut.add_done_callback(self.on_complete)'
                 )
-                exec(self.latest_code)
 
                 print('Executing code...')
                 self.executing = True
 
-            except BaseException as ex:
-                self.print_error(ex)
-                self.executing = False
+            except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
+                raise
 
-    def print_error(self, ex):
-        print('-'*40)
-        print(self.latest_code)
-        print('-'*40)
-        print('{}: {!s}'.format(type(ex).__name__, ex))
+            except:
+                traceback.print_exc()
 
     async def wait_until_not_executing(self):
         while self.executing:
@@ -72,7 +70,10 @@ class ConsoleInput:
         try:
             print('Code completed - result: ' + repr(fut.result()))
 
-        except BaseException as ex:
-            self.print_error(ex)
+        except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
+            raise
+
+        except:
+            traceback.print_exc()
 
         self.executing = False
