@@ -314,7 +314,7 @@ class Commands:
         if not return_text:
             return await self.bot.send_message(
                 message.channel,
-                'No streamers found'
+                'No `alerts` found'
             )
 
         await self.bot.send_message(message.channel, '.\n' + return_text)
