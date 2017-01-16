@@ -13,9 +13,7 @@ class Twitch:
         self.bot = bot
         self.offline_counters = defaultdict(int)
 
-        self.twitch_url_base = 'https://api.twitch.tv/kraken/streams/'
-        self.headers = {'Client-ID': settings.twitch_client_id}
-
+        self.api = Api(settings.twitch_client_id)
         self.counter = Counter(maximum=20)
 
         bot.loop.create_task(self.loop())
@@ -55,7 +53,7 @@ class Twitch:
             await asyncio.sleep(300)
 
     async def do_streamer_alerts(self, streamer):
-        data = await self.get_stream_data(streamer.username)
+        data = await self.api.get_data(streamer.username)
         data = data and data.get('stream', None)
 
         if data:
@@ -63,16 +61,6 @@ class Twitch:
 
         else:
             return await self.handle_not_streaming(streamer)
-
-    async def get_stream_data(self, username):
-        url = self.twitch_url_base + username
-
-        with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=self.headers) as result:
-                if not 200 <= result.status < 300:
-                    raise discord.HTTPException(result, 'Error fetching twitch api')
-
-                return await result.json()
 
     async def handle_streaming(self, streamer, twitch_data):
         self.offline_counters.pop(streamer.username, None)
@@ -124,6 +112,22 @@ class Twitch:
         if streamer.streamer_messages and self.counter.click(streamer.username):
             for streamer_message in streamer.streamer_messages:
                 streamer_message.delete()
+
+
+class Api:
+    def __init__(self, client_id):
+        self.url_base = 'https://api.twitch.tv/kraken/streams/'
+        self.headers = {'Client-ID': client_id}
+
+    async def get_data(self, username):
+        url = self.url_base + username
+
+        with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=self.headers) as result:
+                if not 200 <= result.status < 300:
+                    raise discord.HTTPException(result, 'Error fetching twitch api')
+
+                return await result.json()
 
 
 class Counter:
