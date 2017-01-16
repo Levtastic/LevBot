@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import discord
 import modules
 import settings
@@ -10,15 +11,19 @@ from datetime import datetime
 class LevBot(discord.Client):
     def __init__(self):
         super().__init__()
-        self.db = modules.Database()
-        self.twitch = modules.Twitch(self)
+
+        self.db = modules.Database(self)
         self.commands = modules.Commands(self)
-        self.ci = modules.ConsoleInput(self)
+
+        modules.Twitch(self)
+        modules.ConsoleInput(self)
 
     async def on_ready(self):
         print('Connected!')
-        print('Username: {0.name}#{0.discriminator}'.format(self.user))
-        print('Invite URL: https://discordapp.com/oauth2/authorize?&client_id={}&scope=bot&permissions=0'.format(self.user.id))
+        print('Username: "{!s}"'.format(self.user))
+        print('Invite URL: "{}"'.format(
+            discord.utils.oauth_url(self.user.id)
+        ))
 
     async def on_message(self, message):
         command = self.get_command(message)
@@ -29,7 +34,7 @@ class LevBot(discord.Client):
     def get_command(self, message):
         prefixes = (
             '<@{.id}>'.format(self.user), # standard mention
-            '<@!{.id}>'.format(self.user) # nicknamed mention
+            '<@!{.id}>'.format(self.user) # nickname mention
         )
 
         for prefix in prefixes:
@@ -42,14 +47,10 @@ class LevBot(discord.Client):
         return ''
 
     def is_admin(self, member):
-        author_username = '{0.name}#{0.discriminator}'.format(member)
-        if author_username in settings.admin_usernames:
+        if str(member) in settings.admin_usernames:
             return True
 
-        if self.db.admin_exists(member.id):
-            return True
-
-        return False
+        return bool(self.db.get_Admin_by_user_did(member.id))
 
 
 def set_up_logging():

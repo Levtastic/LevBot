@@ -4,94 +4,63 @@ import discord
 import aiohttp
 import settings
 
+from collections import defaultdict
+from concurrent.futures import CancelledError
+
 
 class Twitch:
-    message_counter_limit = 20
-
     def __init__(self, bot):
         self.bot = bot
-        self.message_counters = {}
+        self.offline_counters = defaultdict(int)
 
         self.twitch_url_base = 'https://api.twitch.tv/kraken/streams/'
         self.headers = {'Client-ID': settings.twitch_client_id}
 
-        self.bot.loop.create_task(self.loop())
+        self.counter = Counter(maximum=20)
+
+        bot.loop.create_task(self.loop())
 
     async def loop(self):
         await self.bot.wait_until_ready()
 
         while not self.bot.is_closed:
-            try:
-                await self.do_alerts()
+            streamers = self.bot.db.get_Streamer_list()
 
-            except discord.HTTPException as ex:
-                logging.warning('HTTP error {0.status} in Twitch.loop() when fetching {0.url}'.format(ex.response))
-                await asyncio.sleep(60)
+            for streamer in streamers:
+                await self.insulate(self.do_streamer_alerts, streamer)
+                await asyncio.sleep(1)
 
-            except aiohttp.ClientError as ex:
-                logging.warning('{} in Twitch.loop(): {!s}'.format(type(ex).__name__, ex))
-                await asyncio.sleep(60)
+            if not streamers:
+                await asyncio.sleep(10)
 
-            except (KeyboardInterrupt, SystemExit, GeneratorExit):
-                raise
-
-            except:
-                logging.exception('Error in Twitch.loop()')
-                await asyncio.sleep(300)
-
-    async def do_alerts(self):
-        alerts = self.bot.db.get_stream_alerts()
-
-        if not alerts:
-            return await asyncio.sleep(10)
-
-        for alert in alerts:
-            message = await self.get_message(alert)
-
-            if self.message_missing(alert, message):
-                self.bot.db.remove_stream_alert_message(alert['message_did'])
-                continue
-
-            message_text = await self.get_twitch_message(
-                alert['username'],
-                alert['alert_format']
-            )
-
-            self.handle_message_counter(message, message_text)
-
-            if self.message_changed(message, message_text):
-                await self.edit_message(message, message_text)
-
-            elif self.message_needs_deleting(message, message_text):
-                await self.delete_message(message)
-
-            elif self.needs_new_message(message, message_text):
-                await self.send_new_message(alert, message_text)
-
-            await asyncio.sleep(1)
-
-    async def get_message(self, alert):
+    async def insulate(self, func, *args, **kwargs):
         try:
-            message_channel = self.bot.get_channel(alert['message_channel_did'])
-            return await self.bot.get_message(message_channel, alert['message_did'])
-        except (AttributeError, discord.NotFound):
-            return None
+            return await func(*args, **kwargs)
 
-    def message_missing(self, alert, message):
-        return alert['message_did'] and not message
+        except discord.HTTPException as ex:
+            logging.warning('HTTP error {0.status} in Twitch.loop() when fetching {0.url}'.format(ex.response))
+            await asyncio.sleep(60)
 
-    async def get_twitch_message(self, username, fmt=''):
-        data = await self.get_stream_data(username)
-        if not (data and data.get('stream', None)):
-            return ''
+        except aiohttp.ClientError as ex:
+            logging.warning('{} in Twitch.loop(): {!s}'.format(type(ex).__name__, ex))
+            await asyncio.sleep(60)
 
-        fmt = fmt or (
-            '@here {0[channel][display_name]} is now live playing {0[channel][game]}:\n'
-            '{0[channel][status]}\n'
-            '{0[channel][url]}'
-        )
+        except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
+            raise
 
-        return fmt.format(data['stream'])
+        except:
+            logging.exception('Error in Twitch.loop()')
+            await asyncio.sleep(300)
+
+    async def do_streamer_alerts(self, streamer):
+        data = await self.get_stream_data(streamer.username)
+        data = data and data.get('stream', None)
+
+        if data:
+            return await self.handle_streaming(streamer, data)
+
+        else:
+            return await self.handle_not_streaming(streamer)
 
     async def get_stream_data(self, username):
         url = self.twitch_url_base + username
@@ -103,46 +72,68 @@ class Twitch:
 
                 return await result.json()
 
-    def handle_message_counter(self, message, message_text):
+    async def handle_streaming(self, streamer, twitch_data):
+        self.offline_counters.pop(streamer.username, None)
+
+        for streamer_channel in streamer.streamer_channels:
+            fmt = streamer_channel.template or (
+                '@here {0[channel][display_name]} is now live playing {0[channel][game]}:\n'
+                '{0[channel][status]}\n'
+                '{0[channel][url]}'
+            )
+
+            text = fmt.format(twitch_data)
+            await self.send_or_update_message(streamer_channel, text)
+
+    async def send_or_update_message(self, streamer_channel, text):
+        if not streamer_channel.streamer_messages:
+            return await self.send_message(streamer_channel, text)
+
+        for streamer_message in streamer_channel.streamer_messages:
+            await self.update_message(streamer_message, text)
+
+    async def send_message(self, streamer_channel, text):
+        message = await self.bot.send_message(streamer_channel.channel, text)
+
+        streamer_message = self.bot.db.get_StreamerMessage()
+        streamer_message.channel_did = streamer_channel.channel.id
+        streamer_message.message_did = message.id
+
+        streamer = streamer_channel.streamer
+        streamer.streamer_messages.append(streamer_message)
+        streamer.save()
+
+    async def update_message(self, streamer_message, text):
+        message = await streamer_message.get_message()
         if not message:
-            return
+            return await self.replace_message(streamer_message, text)
 
-        if message_text:
-            self.message_counters.pop(message.id, None)
+        if message.content != text:
+            return await self.bot.edit_message(message, text)
 
-        elif message.id in self.message_counters:
-            self.message_counters[message.id] += 1
+    async def replace_message(self, streamer_message, text):
+        streamer_message.delete()
+        return await self.send_message(
+            streamer_message.streamer_channel,
+            text
+        )
 
-        else:
-            self.message_counters[message.id] = 1
+    async def handle_not_streaming(self, streamer):
+        if streamer.streamer_messages and self.counter.click(streamer.username):
+            for streamer_message in streamer.streamer_messages:
+                streamer_message.delete()
 
-    def message_changed(self,  message, message_text):
-        return message and message_text and message.content != message_text
 
-    async def edit_message(self, message, message_text):
-        await self.bot.edit_message(message, message_text)
+class Counter:
+    def __init__(self, maximum):
+        self.maximum = maximum
+        self.values = defaultdict(int)
 
-    def message_needs_deleting(self, message, message_text):
-        if message and not message_text:
-            if self.message_counters[message.id] >= self.message_counter_limit:
-                return True
+    def click(self, key='__default__'):
+        self.values[key] += 1
+
+        if self.values[key] > self.maximum:
+            del self.values[key]
+            return True
 
         return False
-
-    async def delete_message(self, message):
-        del self.message_counters[message.id]
-        await self.bot.delete_message(message)
-        self.bot.db.remove_stream_alert_message(message.id)
-
-    def needs_new_message(self, message, message_text):
-        return message_text and not message
-
-    async def send_new_message(self, alert, message_text):
-        new_channel = self.bot.get_channel(alert['alert_channel_did'])
-
-        new_message = await self.bot.send_message(new_channel, message_text)
-        self.bot.db.add_stream_alert_message(
-            alert['stream_alert_id'],
-            new_channel.id,
-            new_message.id
-        )

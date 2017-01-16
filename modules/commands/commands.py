@@ -2,6 +2,9 @@ import logging
 import discord
 
 from collections import defaultdict
+from concurrent.futures import CancelledError
+from . import model_commands
+from ..database import models
 
 
 class Commands:
@@ -10,61 +13,108 @@ class Commands:
 
     async def do_command(self, command, message):
         command_name, command_attributes = (command.split(' ', 1) + [''])[:2]
-
-        aliased_command = self.bot.db.get_command_from_alias(command_name)
-        command_name = aliased_command or command_name
+        command_name = self._get_command_from_alias(command_name)
 
         try:
             command_func = getattr(self, command_name.lower())
+
         except AttributeError:
             return
 
-        await command_func(command_attributes, message)
+        await self._insulate(command_func, command_attributes, message)
 
-    async def shutdown(self, attributes, message):
-        logging.info('Shutting down')
-        await self.bot.send_message(message.channel, 'Shutting down. Goodbye!')
-        await self.bot.logout()
+    def _get_command_from_alias(self, command):
+        alias = self.bot.db.get_CommandAlias_by_alias(command)
+        return alias.command if alias else command
 
-    async def list(self, attributes, message):
-        list_type, list_filter = (attributes.split(' ', 1) + [''])[:2]
-
+    async def _insulate(self, command_func, command_attributes, message):
         try:
-            command_func = getattr(self, '_list_' + list_type.lower())
-        except AttributeError:
-            return await self.bot.send_message(message.channel, 'Unknown list type')
+            return await command_func(command_attributes, message)
 
-        await command_func(list_filter.lower(), message)
+        except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
+            raise
+
+        except BaseException as ex:
+            logging.exception(
+                'Error executing command'
+            )
+
+            await self.bot.send_message(
+                message.channel,
+                '{}: {!s}'.format(
+                    type(ex).__name__,
+                    ex
+                )
+            )
+
+    async def help(self, attributes, message):
+        command_list = [func for func in dir(self) if func[0] != '_']
+        command_list.remove('do_command')
+        command_list = ''.join('    `{}`\n'.format(c) for c in command_list)
+
+        model_list = [cls for cls in dir(models) if cls[0].isupper()]
+        model_list = ''.join('    `{}`\n'.format(m) for m in model_list)
+
+        await self.bot.send_message(
+            message.channel,
+            '.\n' +
+            'Available commands:\n' +
+            command_list +
+            '\n' +
+            'Custom types:\n' +
+            '    `alert`/`alerts`\n' +
+            '\n' +
+            'List-only types:\n' +
+            '    `channels`\n' +
+            '    `users`\n' +
+            '\n' +
+            'Models:\n' +
+            model_list
+        )
 
     async def add(self, attributes, message):
         add_type, add_attributes = (attributes.split(' ', 1) + [''])[:2]
 
         try:
             command_func = getattr(self, '_add_' + add_type.lower())
-        except AttributeError:
-            return await self.bot.send_message(message.channel, 'Unknown add type')
 
-        await command_func(add_attributes, message)
+        except AttributeError:
+            return await model_commands.add(self.bot, add_type, add_attributes, message)
+
+        return await command_func(add_attributes, message)
 
     async def edit(self, attributes, message):
         edit_type, edit_attributes = (attributes.split(' ', 1) + [''])[:2]
 
         try:
             command_func = getattr(self, '_edit_' + edit_type.lower())
-        except AttributeError:
-            return await self.bot.send_message(message.channel, 'Unknown edit type')
 
-        await command_func(edit_attributes, message)
+        except AttributeError:
+            return await model_commands.edit(self.bot, edit_type, edit_attributes, message)
+
+        return await command_func(edit_attributes, message)
 
     async def remove(self, attributes, message):
         remove_type, remove_attributes = (attributes.split(' ', 1) + [''])[:2]
 
         try:
             command_func = getattr(self, '_remove_' + remove_type.lower())
-        except AttributeError:
-            return await self.bot.send_message(message.channel, 'Unknown remove type')
 
-        await command_func(remove_attributes, message)
+        except AttributeError:
+            return await model_commands.remove(self.bot, remove_type, remove_attributes, message)
+
+        return await command_func(remove_attributes, message)
+
+    async def list(self, attributes, message):
+        list_type, list_filter = (attributes.split(' ', 1) + [''])[:2]
+
+        try:
+            command_func = getattr(self, '_list_' + list_type.lower())
+
+        except AttributeError:
+            return await model_commands.list(self.bot, list_type, list_filter, message)
+
+        return await command_func(list_filter, message)
 
     async def _list_channels(self, list_filter, message):
         channels = defaultdict(list)
@@ -73,16 +123,19 @@ class Commands:
         for server in self.bot.servers:
             for channel in server.channels:
                 if channel.type == discord.ChannelType.text:
-                    if list_filter in channel.name.lower():
+                    if list_filter.lower() in channel.name.lower():
                         channels[server].append(channel)
 
         if not channels:
-            return await self.bot.send_message(message.channel, 'No channels found')
+            return await self.bot.send_message(
+                message.channel,
+                'No channels found'
+            )
 
         for server in channels.keys():
-            return_text += 'Server: {}\n'.format(server)
+            return_text += 'Server: `{}`\n'.format(server)
             for channel in channels[server]:
-                return_text += '    {0.id}: {0.name}'.format(channel)
+                return_text += '    `{0.id}`: `{0.name}`'.format(channel)
 
                 if not channel.permissions_for(server.me).send_messages:
                     return_text += ' (cannot message)'
@@ -97,212 +150,171 @@ class Commands:
 
         for server in self.bot.servers:
             for member in server.members:
-                if list_filter in member.name.lower():
+                if list_filter.lower() in member.name.lower():
                     users[server].append(member)
 
         if not users:
-            return await self.bot.send_message(message.channel, 'No users found')
+            return await self.bot.send_message(
+                message.channel,
+                'No users found'
+            )
 
         for server in users.keys():
-            return_text += 'Server: {}\n'.format(server)
+            return_text += 'Server: `{}`\n'.format(server)
             for member in users[server]:
-                return_text += '    {0.id}: {0.name}'.format(member)
+                return_text += '    `{0.id}`: `{0.name}`'.format(member)
 
                 if member.nick:
-                    return_text += ' ({0.nick})'.format(member)
+                    return_text += ' `({0.nick})`'.format(member)
 
                 if member.bot:
-                    return_text += ' BOT'
+                    return_text += ' `BOT`'
 
                 return_text += '\n'
 
         await self.bot.send_message(message.channel, return_text)
 
-    async def _list_streamers(self, list_filter, message):
-        streamers = self.bot.db.get_streamers()
-        streamers = [s for s in streamers if list_filter in s[0].lower()]
-
-        if not streamers:
-            return await self.bot.send_message(message.channel, 'No streamers found')
-
-        fmt = 'Username: "{0[0]}", Channel: "{0[1]}", Format: "{0[2]}"'
-        return_text = '\n'.join(fmt.format(streamer) for streamer in streamers)
-
-        await self.bot.send_message(message.channel, '.\n' + return_text)
-
-    async def _list_streamer_messages(self, list_filter, message):
-        streamer_messages = self.bot.db.get_stream_alert_messages()
-        streamer_messages = [sm for sm in streamer_messages if list_filter in sm[0].lower()]
-
-        if not streamer_messages:
-            return await self.bot.send_message(message.channel, 'No streamer messages found')
-
-        fmt = 'Username: "{0[0]}", Channel: {0[1]}, Message: {0[2]}'
-        return_text = '\n'.join(fmt.format(msg) for msg in streamer_messages)
-
-        await self.bot.send_message(message.channel, '.\n' + return_text)
-
-    async def _list_admins(self, list_filter, message):
-        admins = self.bot.db.get_admins()
-        admins = [a for a in admins if list_filter in a[1].lower()]
-
-        if not admins:
-            return await self.bot.send_message(message.channel, 'No admins found')
-
-        return_text = '\n'.join('{0[0]}: {0[1]}'.format(admin) for admin in admins)
-
-        await self.bot.send_message(message.channel, '.\n' + return_text)
-
-    async def _list_aliases(self, list_filter, message):
-        aliases = self.bot.db.get_aliases()
-        aliases = [a for a in aliases if list_filter in a[1].lower()]
-
-        if not aliases:
-            return await self.bot.send_message(message.channel, 'No aliases found')
-
-        return_text = '\n'.join('{0[0]} <- {0[1]}'.format(a) for a in aliases)
-
-        await self.bot.send_message(message.channel, '.\n' + return_text)
-
-    async def _add_streamer(self, attributes, message):
+    async def _add_alert(self, attributes, message):
         try:
-            username, channel_id, fmt, (attributes.split(' ', 2) + [''])[:3]
-
-            if attr_1.lower() != 'here' and not attr_2:
-                raise ValueError('missing attribute')
+            username, channel_name, template = (attributes.split(' ', 2) + [''])[:3]
 
         except ValueError:
-            error = (
-                'Correct syntax:\n'
-                'add streamer <username> <channel id> <format (optional)>\n'
-                'add streamer <username> here <format (optional)>'
+            return await self.bot.send_message(
+                message.channel,
+                'Syntax: `add alert <username> <channel name/id or "here"> <template>`'
             )
-            return await self.bot.send_message(message.channel, error)
 
-        if channel_id.lower() == 'here':
-            channel_id = message.channel.id
+        streamer = self.bot.db.get_Streamer_by_username(username.lower())
+        if not streamer:
+            streamer = self.bot.db.get_Streamer()
+            streamer.username = username.lower()
+            streamer.save()
 
-        if self.bot.db.add_streamer(username, channel_id, fmt):
-            result = 'Streamer added'
-        else:
-            result = 'Streamer not added'
+        channel = self._get_channel_by_name(channel_name, message)
+        if not channel:
+            return await self.bot.send_message(
+                message.channel,
+                'Channel `{}` not found'.format(
+                    channel_name
+                )
+            )
 
-        await self.bot.send_message(message.channel, result)
+        streamer_channel = self.bot.db.get_StreamerChannel()
+        if streamer_channel.get_list_by(streamer_id=streamer.id,
+                                    channel_did=channel.id):
+            return await self.bot.send_message(
+                message.channel,
+                'An alert for `{}` in `{}#{}` already exists'.format(
+                    username,
+                    channel.server.name,
+                    channel.name
+                )
+            )
 
-    async def _add_admin(self, attributes, message):
+        streamer_channel.streamer_id = streamer.id
+        streamer_channel.channel_did = channel.id
+        streamer_channel.template = template
+        streamer_channel.save()
+
+        fmt = ('Alert added for `{0.username}` `({0.id})`'
+               ' in `{1.server.name}#{1.channel.name}` `({1.id})`')
+
+        return await self.bot.send_message(
+            message.channel,
+            fmt.format(streamer, streamer_channel)
+        )
+
+    def _get_channel_by_name(self, name, message):
+        if name.lower() == 'here':
+            return message.channel
+
+        return self.bot.get_channel(name) or discord.utils.get(
+            self.bot.get_all_channels(),
+            name=name,
+            type=discord.ChannelType.text
+        )
+
+    async def _edit_alert(self, attributes, message):
+        await self.bot.send_message(
+            message.channel,
+            'Editing alerts is not currently supported. '
+            'Please use `remove alert` and then `add alert` instead'
+        )
+
+    async def _remove_alert(self, attributes, message):
         try:
-            user_id, friendly_name = attributes.split(' ', 1)
+            username, channel_name = attributes.split(' ', 2)
+
         except ValueError:
-            error = 'Correct syntax: add admin <user_id> <friendly_name>'
-            return await self.bot.send_message(message.channel, error)
+            return await self.bot.send_message(
+                message.channel,
+                'Syntax: `remove alert <username> <channel name/id or "here">`'
+            )
 
-        if self.bot.db.add_admin(user_id, friendly_name):
-            result = 'Admin added'
-        else:
-            result = 'Admin not added'
+        streamer = self.bot.db.get_Streamer_by_username(username.lower())
+        if not streamer:
+            return await self.bot.send_message(
+                message.channel,
+                'Streamer `{}` not found'.format(username)
+            )
 
-        await self.bot.send_message(message.channel, result)
+        channel = self._get_channel_by_name(channel_name, message)
+        if not channel:
+            return await self.bot.send_message(
+                message.channel,
+                'Channel `#{}` not found'.format(
+                    channel_name
+                )
+            )
 
-    async def _add_alias(self, attributes, message):
-        try:
-            command, alias = attributes.split(' ', 1)
-        except ValueError:
-            error = 'Correct syntax: add alias <command> <alias>'
-            return await self.bot.send_message(message.channel, error)
+        streamer_channel = self.bot.db.get_StreamerChannel().get_by(
+            streamer_id=streamer.id,
+            channel_did=channel.id
+        )
 
-        if self.bot.db.add_alias(command, alias):
-            result = 'Alias added'
-        else:
-            result = 'Alias not added'
+        if not streamer_channel:
+            return await self.bot.send_message(
+                message.channel,
+                'Alert for `{}` in `#{}` not found'.format(
+                    username,
+                    channel_name
+                )
+            )
 
-        await self.bot.send_message(message.channel, result)
+        streamer_channel.delete()
 
-    async def _edit_streamer(self, attributes, message):
-        try:
-            username, channel_id, fmt = (attributes.split(' ', 2) + [''])[:3]
-        except ValueError:
-            error = 'Correct syntax: edit streamer <username> <channel id> <format (optional)>'
-            return await self.bot.send_message(message.channel, error)
+        await self.bot.send_message(
+            message.channel,
+            'Alert for `{}` in `#{}` deleted'.format(
+                streamer.username,
+                channel.name
+            )
+        )
 
-        if self.bot.db.edit_streamer(username, channel_id, fmt):
-            result = 'Streamer edited'
-        else:
-            result = 'Streamer not edited'
+        if not streamer.streamer_channels:
+            streamer.delete()
 
-        await self.bot.send_message(message.channel, result)
+    async def _list_alerts(self, username_filter, message):
+        username_filter = username_filter.lower()
+        return_text = ''
 
-    async def _edit_admin(self, attributes, message):
-        try:
-            user_id, friendly_name = attributes.split(' ', 1)
-        except ValueError:
-            error = 'Correct syntax: edit admin <user_id> <friendly_name>'
-            return await self.bot.send_message(message.channel, error)
+        streamers = self.bot.db.get_Streamer_list()
 
-        if self.bot.db.edit_admin(user_id, friendly_name):
-            result = 'Admin edited'
-        else:
-            result = 'Admin not edited'
+        for streamer in streamers:
+            if username_filter not in streamer.username.lower():
+                continue
 
-        await self.bot.send_message(message.channel, result)
+            fmt = '`{0.server.name}#{0.channel.name}` `({0.id})`'
 
-    async def _edit_alias(self, attributes, message):
-        try:
-            command, alias = attributes.split(' ', 1)
-        except ValueError:
-            error = 'Correct syntax: edit alias <command> <alias>'
-            return await self.bot.send_message(message.channel, error)
+            return_text += '`{0.username}` `({0.id})`: {1}\n'.format(
+                streamer,
+                ', '.join(fmt.format(sc) for sc in streamer.streamer_channels)
+            )
 
-        if self.bot.db.edit_alias(command, alias):
-            result = 'Alias edited'
-        else:
-            result = 'Alias not edited'
+        if not return_text:
+            return await self.bot.send_message(
+                message.channel,
+                'No streamers found'
+            )
 
-        await self.bot.send_message(message.channel, result)
-
-    async def _remove_streamer(self, attributes, message):
-        if not attributes:
-            error = 'Correct syntax: remove streamer <username>'
-            return await self.bot.send_message(message.channel, error)
-
-        if self.bot.db.remove_streamer(attributes):
-            result = 'Streamer removed'
-        else:
-            result = 'Streamer not removed'
-
-        await self.bot.send_message(message.channel, result)
-
-    async def _remove_streamer_message(self, attributes, message):
-        if not attributes:
-            error = 'Correct syntax: remove streamer_message <message_id>'
-            return await self.bot.send_message(message.channel, error)
-
-        if self.bot.db.remove_stream_alert_message(attributes):
-            result = 'Streamer message removed'
-        else:
-            result = 'Streamer message not removed'
-
-        await self.bot.send_message(message.channel, result)
-
-    async def _remove_admin(self, attributes, message):
-        if not attributes:
-            error = 'Correct syntax: remove admin <user_id>'
-            return await self.bot.send_message(message.channel, error)
-
-        if self.bot.db.remove_admin(attributes):
-            result = 'Admin removed'
-        else:
-            result = 'Admin not removed'
-
-        await self.bot.send_message(message.channel, result)
-
-    async def _remove_alias(self, attributes, message):
-        if not attributes:
-            error = 'Correct syntax: remove alias <alias>'
-            return await self.bot.send_message(message.channel, error)
-
-        if self.bot.db.remove_alias(attributes):
-            result = 'Alias removed'
-        else:
-            result = 'Alias not removed'
-
-        await self.bot.send_message(message.channel, result)
+        await self.bot.send_message(message.channel, '.\n' + return_text)

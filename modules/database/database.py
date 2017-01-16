@@ -1,429 +1,127 @@
 import sqlite3
 
 from contextlib import closing
+from . import models
 
 
 class Database:
-    def __init__(self):
-        self.database = sqlite3.connect('levbot.db')
+    def __init__(self, bot, db_name='levbot.db'):
+        self.bot = bot
+
+        self.database = sqlite3.connect(db_name)
         self.database.row_factory = sqlite3.Row
-        if not self.database_exists():
-            self.build_database()
 
-    def database_exists(self):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    COUNT(1)
-                FROM
-                    sqlite_master
-                WHERE
-                    type = 'table'
-            """)
-            return int(cursor.fetchone()[0]) > 0
+    def __getattr__(self, name):
+        if name.startswith('get_'):
+            return self.get_model_factory(name[4:].split('_'))
 
-    def build_database(self):
-        query = ''
+        raise AttributeError("'{}' object has no attribute '{}'".format(
+            type(self).__name__,
+            name
+        ))
 
-        with open('modules/database/database.sql', 'r') as file:
-            query = file.read()
+    def get_model_factory(self, attrs):
+        # db.get_Model()                    # empty
+        # db.get_Model_by_field(field)      # one
+        # db.get_Model_list()               # all
+        # db.get_Model_list_by_field(field) # list
 
-        with closing(self.database.cursor()) as cursor:
-            cursor.executescript(query)
+        model_name = attrs.pop(0)
 
-        self.database.commit()
+        if not attrs:
+            return lambda: self.get_initialised_model(model_name)
 
-    def get_stream_alerts(self):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    sa.id AS stream_alert_id,
-                    sa.username,
-                    sa.alert_channel_did,
-                    sa.alert_format,
-                    sam.channel_did AS message_channel_did,
-                    sam.message_did
-                FROM
-                    stream_alerts AS sa
-                LEFT OUTER JOIN
-                    stream_alert_messages AS sam
-                    ON
-                        sam.stream_alert_id = sa.id
-                ORDER BY
-                    sa.username ASC
-            """)
+        model = self.get_initialised_model(model_name)
 
-            return [row for row in cursor]
+        if attrs.pop(0) == 'by': # or 'list'
+            func_name = 'get_by_{}'.format('_'.join(attrs))
+            return getattr(model, func_name)
 
-    def streamer_exists(self, username):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    COUNT(1)
-                FROM
-                    stream_alerts
-                WHERE
-                    username = ?
-            """,
-                (username, )
-            )
-            return int(cursor.fetchone()[0]) > 0
+        if not attrs:
+            return model.get_all
 
-    def add_streamer(self, username, alert_channel_did, alert_format=''):
-        if self.streamer_exists(username):
-            return False
+        attrs.pop(0) # 'by'
+
+        func_name = 'get_list_by_{}'.format('_'.join(attrs))
+
+        return getattr(model, func_name)
+
+    def get_initialised_model(self, name):
+        model = getattr(models, name)
+        return model(self, self.bot)
+
+    def execute(self, query, parameters=(), script=False):
+        parameters = self._convert_parameters(parameters)
 
         with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                INSERT INTO
-                    stream_alerts
-                    (
-                        username,
-                        alert_channel_did,
-                        alert_format
-                    )
-                VALUES
-                    ( ?, ?, ? )
-            """,
-                (username, alert_channel_did, alert_format)
-            )
+            if script: cursor.executescript(query)
+            else: cursor.execute(query, parameters)
 
-        self.database.commit()
+            self.database.commit()
 
-        return True
+            return cursor.lastrowid
 
-    def edit_streamer(self, username, alert_channel_did, alert_format=''):
-        if not self.streamer_exists(username):
-            return False
+    def _convert_parameters(self, parameters):
+        if isinstance(parameters, (tuple, list, dict)):
+            return parameters
+
+        return (parameters, )
+
+    def fetch_all(self, query, parameters=()):
+        parameters = self._convert_parameters(parameters)
 
         with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                UPDATE
-                    stream_alerts
-                SET
-                    alert_channel_did = :alert_channel_did,
-                    alert_format = :alert_format
-                WHERE
-                    username = :username
-            """,
-                {
-                    'username': username,
-                    'alert_channel_did': alert_channel_did,
-                    'alert_format': alert_format
-                }
-            )
+            cursor.execute(query, parameters)
 
-        self.database.commit()
+            return cursor.fetchall()
 
-        return True
-
-    def remove_streamer(self, username):
-        if not self.streamer_exists(username):
-            return False
+    def fetch_row(self, query, parameters=()):
+        parameters = self._convert_parameters(parameters)
 
         with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                DELETE FROM
-                    stream_alerts
-                WHERE
-                    username = ?
-            """,
-                (username, )
-            )
+            cursor.execute(query, parameters)
 
-        self.database.commit()
+            return cursor.fetchone()
 
-        return True
+    def fetch_value(self, query, parameters=(), *args, **kwargs):
+        parameters = self._convert_parameters(parameters)
 
-    def get_streamers(self):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    username,
-                    alert_channel_did,
-                    alert_format
-                FROM
-                    stream_alerts
-                ORDER BY
-                    username ASC
-            """)
+        try:
+            return self.fetch_row(query, parameters)[0]
 
-            return [row for row in cursor]
+        except IndexError:
+            if args: return args[0]
+            return kwargs.pop('default')
 
-    def stream_alert_message_exists(self, message_did):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    COUNT(1)
-                FROM
-                    stream_alert_messages
-                WHERE
-                    message_did = ?
-            """,
-                (message_did, )
-            )
-            return int(cursor.fetchone()[0]) > 0
+    def insert(self, table, fields):
+        query = 'INSERT INTO {} ({}) VALUES ({})'
 
-    def add_stream_alert_message(self, stream_alert_id, channel_did, message_did):
-        if self.stream_alert_message_exists(message_did):
-            return False
+        fieldnames = fields.keys()
 
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                INSERT INTO
-                    stream_alert_messages
-                    (
-                        stream_alert_id,
-                        channel_did,
-                        message_did
-                    )
-                VALUES
-                    ( ?, ?, ? )
-            """,
-                (stream_alert_id, channel_did, message_did)
-            )
+        query = query.format(
+            table,
+            ','.join(fieldnames),
+            ','.join(':{}'.format(name) for name in fieldnames)
+        )
 
-        self.database.commit()
+        return self.execute(query, fields)
 
-        return True
+    def update(self, table, fields, where_query='', where_args={}, **kwargs):
+        query = 'UPDATE {} SET {} WHERE {}'
 
-    def remove_stream_alert_message(self, message_did):
-        if not self.stream_alert_message_exists(message_did):
-            return False
+        fieldnames = tuple(fields.keys())
 
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                DELETE FROM
-                    stream_alert_messages
-                WHERE
-                    message_did = ?
-            """,
-                (message_did, )
-            )
+        if where_query:
+            fields.update(where_args)
 
-        self.database.commit()
-
-        return True
-
-    def get_stream_alert_messages(self):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    sa.username,
-                    sam.channel_did,
-                    sam.message_did
-                FROM
-                    stream_alert_messages AS sam
-                LEFT OUTER JOIN
-                    stream_alerts AS sa
-                    ON
-                        sa.id = sam.stream_alert_id
-                ORDER BY
-                    sa.username ASC
-            """)
-
-            return [row for row in cursor]
-
-    def admin_exists(self, user_did):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    COUNT(1)
-                FROM
-                    admins
-                WHERE
-                    user_did = ?
-            """,
-                (user_did, )
-            )
-            return int(cursor.fetchone()[0]) > 0
-
-    def add_admin(self, user_did, friendly_name):
-        if self.admin_exists(user_did):
-            return False
-
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                INSERT INTO
-                    admins
-                    (
-                        user_did,
-                        friendly_name
-                    )
-                VALUES
-                    ( ?, ? )
-            """,
-                (user_did, friendly_name)
-            )
-
-        self.database.commit()
-
-        return True
-
-    def edit_admin(self, user_did, friendly_name):
-        if not self.admin_exists(user_did):
-            return False
-
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                UPDATE
-                    admins
-                SET
-                    friendly_name = :friendly_name,
-                WHERE
-                    user_did = :user_did
-            """,
-                {
-                    'friendly_name': friendly_name,
-                    'user_did': user_did
-                }
-            )
-
-        self.database.commit()
-
-        return True
-
-    def remove_admin(self, user_did):
-        if not self.admin_exists(user_did):
-            return False
-
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                DELETE FROM
-                    admins
-                WHERE
-                    user_did = ?
-            """,
-                (user_did, )
-            )
-
-        self.database.commit()
-
-        return True
-
-    def get_admins(self):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    user_did,
-                    friendly_name
-                FROM
-                    admins
-                ORDER BY
-                    friendly_name ASC
-            """)
-
-            return [row for row in cursor]
-
-    def alias_exists(self, alias):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    COUNT(1)
-                FROM
-                    command_aliases
-                WHERE
-                    alias = ?
-            """,
-                (alias, )
-            )
-            return int(cursor.fetchone()[0]) > 0
-
-    def add_alias(self, command, alias):
-        if self.alias_exists(alias):
-            return False
-
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                INSERT INTO
-                    command_aliases
-                    (
-                        command,
-                        alias
-                    )
-                VALUES
-                    ( ?, ? )
-            """,
-                (command, alias)
-            )
-
-        self.database.commit()
-
-        return True
-
-    def edit_alias(self, command, alias):
-        if not self.alias_exists(alias):
-            return False
-
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                UPDATE
-                    command_aliases
-                SET
-                    command = :command,
-                WHERE
-                    alias = :alias
-            """,
-                {
-                    'command': command,
-                    'alias': alias
-                }
-            )
-
-        self.database.commit()
-
-        return True
-
-    def remove_alias(self, alias):
-        if not self.alias_exists(alias):
-            return False
-
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                DELETE FROM
-                    command_aliases
-                WHERE
-                    alias = ?
-            """,
-                (alias, )
-            )
-
-        self.database.commit()
-
-        return True
-
-    def get_aliases(self):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    command,
-                    alias
-                FROM
-                    command_aliases
-                ORDER BY
-                    command ASC
-            """)
-
-            return [row for row in cursor]
-
-    def get_command_from_alias(self, alias):
-        with closing(self.database.cursor()) as cursor:
-            cursor.execute("""
-                SELECT
-                    command
-                FROM
-                    command_aliases
-                WHERE
-                    alias = ?
-                ORDER BY
-                    id DESC
-                LIMIT 1
-            """,
-                (alias, )
-            )
-            result = cursor.fetchone()
-
-        if result:
-            return result[0]
         else:
-            return ''
+            fields.update({'where_' + key: value for key, value in kwargs.items()})
+            where_query = ' AND '.join('{0} = :where_{0}'.format(name) for name in kwargs.keys())
+
+        query = query.format(
+            table,
+            ','.join('{0} = :{0}'.format(name) for name in fieldnames),
+            where_query
+        )
+
+        return self.execute(query, fields)
