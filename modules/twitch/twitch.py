@@ -1,3 +1,4 @@
+import time
 import logging
 import asyncio
 import discord
@@ -26,7 +27,6 @@ class Twitch:
 
             for streamer in streamers:
                 await self.insulate(self.do_streamer_alerts, streamer)
-                await asyncio.sleep(1)
 
             if not streamers:
                 await asyncio.sleep(10)
@@ -115,11 +115,16 @@ class Twitch:
 
 
 class Api:
-    def __init__(self, client_id):
-        self.url_base = 'https://api.twitch.tv/kraken/streams/'
+    def __init__(self, client_id, timeout_delay=1):
         self.headers = {'Client-ID': client_id}
+        self.timeout_delay = timeout_delay
+
+        self.url_base = 'https://api.twitch.tv/kraken/streams/'
+        self.last_timeout = time.perf_counter() - timeout_delay
 
     async def get_data(self, username):
+        await self.timeout()
+
         url = self.url_base + username
 
         with aiohttp.ClientSession() as session:
@@ -128,6 +133,15 @@ class Api:
                     raise discord.HTTPException(result, 'Error fetching twitch api')
 
                 return await result.json()
+
+    async def timeout(self):
+        time_since = time.perf_counter() - self.last_timeout
+        time_until = self.timeout_delay - time_since
+        wait_time = max(0, time_until)
+
+        await asyncio.sleep(wait_time)
+
+        self.last_timeout = time.perf_counter()
 
 
 class Counter:
