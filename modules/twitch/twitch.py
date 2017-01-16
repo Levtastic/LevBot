@@ -38,7 +38,9 @@ class Twitch:
             return await func(*args, **kwargs)
 
         except discord.HTTPException as ex:
-            logging.warning('HTTP error {0.status} in Twitch.loop() when fetching {0.url}'.format(ex.response))
+            logging.warning((
+                'Error in Twitch.loop() when fetching {0.response.url}:  {0!s}'
+            ).format(ex))
             await asyncio.sleep(60)
 
         except aiohttp.ClientError as ex:
