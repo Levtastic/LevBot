@@ -12,7 +12,6 @@ from concurrent.futures import CancelledError
 class Twitch:
     def __init__(self, bot):
         self.bot = bot
-        self.offline_counters = defaultdict(int)
 
         self.api = Api(settings.twitch_client_id)
         self.counter = Counter(maximum=20)
@@ -25,10 +24,10 @@ class Twitch:
         while not self.bot.is_closed:
             streamers = self.bot.db.get_Streamer_list()
 
-            for streamer in streamers:
-                await self.insulate(self.do_streamer_alerts, streamer)
+            if streamers:
+                await self.insulate(self.do_streamer_alerts, streamers)
 
-            if not streamers:
+            else:
                 await asyncio.sleep(10)
 
     async def insulate(self, func, *args, **kwargs):
@@ -52,18 +51,21 @@ class Twitch:
             logging.exception('Error in Twitch.loop()')
             await asyncio.sleep(300)
 
-    async def do_streamer_alerts(self, streamer):
-        data = await self.api.get_data(streamer.username)
-        data = data and data.get('stream', None)
+    async def do_streamer_alerts(self, streamers):
+        usernames = [streamer.username for streamer in streamers]
+        streamer_data = await self.api.get_data(usernames)
 
-        if data:
-            return await self.handle_streaming(streamer, data)
+        for streamer in streamers:
+            data = streamer_data[streamer.username]
 
-        else:
-            return await self.handle_not_streaming(streamer)
+            if data:
+                await self.handle_streaming(streamer, data)
+
+            else:
+                await self.handle_not_streaming(streamer)
 
     async def handle_streaming(self, streamer, twitch_data):
-        self.offline_counters.pop(streamer.username, None)
+        self.counter.reset(streamer.username)
 
         for streamer_channel in streamer.streamer_channels:
             fmt = streamer_channel.template or (
@@ -119,13 +121,27 @@ class Api:
         self.headers = {'Client-ID': client_id}
         self.timeout_delay = timeout_delay
 
-        self.url_base = 'https://api.twitch.tv/kraken/streams/'
+        self.urlfmt = (
+            'https://api.twitch.tv/kraken/streams'
+                '?limit=100'
+                '&stream_type=live'
+                '&channel={}'
+        )
+
         self.last_timeout = time.perf_counter() - timeout_delay
 
-    async def get_data(self, username):
-        await self.timeout()
+    async def get_data(self, usernames):
+        url = self.urlfmt.format(','.join(usernames))
+        response = await self.do_query(url)
 
-        url = self.url_base + username
+        data = {username: None for username in usernames}
+        for stream in response['streams']:
+            data[stream['channel']['name']] = stream
+
+        return data
+
+    async def do_query(self, url):
+        await self.timeout()
 
         with aiohttp.ClientSession() as session:
             async with session.get(url, headers=self.headers) as result:
@@ -157,3 +173,6 @@ class Counter:
             return True
 
         return False
+
+    def reset(self, key='__default__'):
+        self.values.pop(key, None)
