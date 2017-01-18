@@ -8,7 +8,7 @@ class ConsoleInput:
     def __init__(self, bot):
         self.bot = bot
 
-        self.executing = False
+        self.is_ready = asyncio.Event()
         self.commands = (
             'exit',
         )
@@ -19,8 +19,10 @@ class ConsoleInput:
         await self.bot.wait_until_ready()
         await asyncio.sleep(0) # let other loops begin before this one
 
+        self.is_ready.set()
+
         while not self.bot.is_closed:
-            await self.wait_until_not_executing()
+            await self.is_ready.wait()
             message = await self.get_console_input()
 
             if message == 'exit':
@@ -37,17 +39,13 @@ class ConsoleInput:
                 )
 
                 print('Executing code...')
-                self.executing = True
+                self.is_ready.clear()
 
             except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
                 raise
 
             except:
                 traceback.print_exc()
-
-    async def wait_until_not_executing(self):
-        while self.executing:
-            await asyncio.sleep(0)
 
     async def get_console_input(self):
         lines = []
@@ -76,4 +74,4 @@ class ConsoleInput:
         except:
             traceback.print_exc()
 
-        self.executing = False
+        self.is_ready.set()
