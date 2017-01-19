@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 import discord
 import modules
 import settings
@@ -26,31 +25,7 @@ class LevBot(discord.Client):
         ))
 
     async def on_message(self, message):
-        command = self.get_command(message)
-
-        if command and self.is_admin(message.author):
-            await self.commands.do_command(command, message)
-
-    def get_command(self, message):
-        prefixes = (
-            '<@{.id}>'.format(self.user), # standard mention
-            '<@!{.id}>'.format(self.user) # nickname mention
-        )
-
-        for prefix in prefixes:
-            if message.content.startswith(prefix):
-                return message.content[len(prefix):].lstrip()
-
-        if message.channel.is_private:
-            return message.content
-
-        return ''
-
-    def is_admin(self, member):
-        if str(member) in settings.admin_usernames:
-            return True
-
-        return bool(self.db.get_Admin_by_user_did(member.id))
+        await self.commands.handle_message(message)
 
 
 def set_up_logging():

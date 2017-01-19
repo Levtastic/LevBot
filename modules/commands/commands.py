@@ -1,5 +1,6 @@
 import logging
 import discord
+import settings
 
 from collections import defaultdict
 from concurrent.futures import CancelledError
@@ -10,6 +11,33 @@ from ..database import models
 class Commands:
     def __init__(self, bot):
         self.bot = bot
+
+    async def handle_message(self, message):
+        command = self.get_command(message)
+
+        if command and self.is_admin(message.author):
+            await self.do_command(command, message)
+
+    def get_command(self, message):
+        prefixes = (
+            '<@{.id}>'.format(self.bot.user), # standard mention
+            '<@!{.id}>'.format(self.bot.user) # nickname mention
+        )
+
+        for prefix in prefixes:
+            if message.content.startswith(prefix):
+                return message.content[len(prefix):].lstrip()
+
+        if message.channel.is_private:
+            return message.content
+
+        return ''
+
+    def is_admin(self, member):
+        if str(member) in settings.admin_usernames:
+            return True
+
+        return bool(self.bot.db.get_Admin_by_user_did(member.id))
 
     async def do_command(self, command, message):
         command_name, command_attributes = (command.split(' ', 1) + [''])[:2]
