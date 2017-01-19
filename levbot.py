@@ -37,7 +37,9 @@ def set_up_logging():
     )
 
     os.makedirs('logs', exist_ok=True)
-    filename = 'logs/{}.log'.format(datetime.now().strftime('%Y-%m-%d %H-%M-%S'))
+    filename = 'logs/{}.log'.format(
+        datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+    )
     filehandler = logging.FileHandler(filename)
     filehandler.setLevel(logging.INFO)
     filehandler.setFormatter(formatter)
