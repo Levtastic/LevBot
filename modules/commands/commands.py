@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import discord
 import settings
 
@@ -11,6 +12,10 @@ from ..database import models
 class Commands:
     def __init__(self, bot):
         self.bot = bot
+        self.root = CommandHandler('__root__')
+
+    def register_handler(self, command, coroutine):
+        self.root.register_handler(command, coroutine)
 
     async def handle_message(self, message):
         command = self._get_command(message)
@@ -346,3 +351,62 @@ class Commands:
             )
 
         await self.bot.send_message(message.channel, '.\n' + return_text)
+
+
+class CommandHandler:
+    def __init__(self, command):
+        self._command = command
+        self._sub_handlers = {}
+        self._coroutines = []
+
+    @property
+    def command(self):
+        return self._command
+
+    @property
+    def is_end(self):
+        return not self._sub_handlers
+
+    @property
+    def coroutines(self):
+        return self._coroutines
+
+    def ensure_sub_handlers(self, commands):
+        command, sub_commands = commands.split(' ', 1)
+        handler = self._ensure_sub_handler(command)
+
+        if sub_commands:
+            return handler.ensure_sub_handlers(sub_commands)
+
+        return handler
+
+    def _ensure_sub_handler(self, command):
+        if command not in self._sub_handlers:
+            self._sub_handlers[command] = self.__class__(command)
+
+        return self._sub_handlers[command]
+
+    def register_handler(self, *args): # command=None, coroutine
+        if len(args) == 1:
+            self._coroutines.append(args[0])
+            return
+
+        self.ensure_sub_handlers(args[0]).register_handler(args[1])
+
+    def get(self, commands):
+        command, sub_commands = commands.split(' ', 1)
+
+        if command not in self._sub_handlers:
+            return (self, commands)
+
+        handler = self._sub_handlers[command]
+
+        if sub_commands:
+            return handler.get(sub_commands)
+
+        return (handler, '')
+
+    def handle(self, command, message):
+        handler, attributes = self.get(command)
+        for coro in handler.coroutines:
+            asyncio.ensure_future(coro(attributes, message))
