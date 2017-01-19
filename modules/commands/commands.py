@@ -13,12 +13,12 @@ class Commands:
         self.bot = bot
 
     async def handle_message(self, message):
-        command = self.get_command(message)
+        command = self._get_command(message)
 
-        if command and self.is_admin(message.author):
-            await self.do_command(command, message)
+        if command and self._is_admin(message.author):
+            await self._do_command(command, message)
 
-    def get_command(self, message):
+    def _get_command(self, message):
         prefixes = (
             '<@{.id}>'.format(self.bot.user), # standard mention
             '<@!{.id}>'.format(self.bot.user) # nickname mention
@@ -33,13 +33,13 @@ class Commands:
 
         return ''
 
-    def is_admin(self, member):
+    def _is_admin(self, member):
         if str(member) in settings.admin_usernames:
             return True
 
         return bool(self.bot.db.get_Admin_by_user_did(member.id))
 
-    async def do_command(self, command, message):
+    async def _do_command(self, command, message):
         command_name, command_attributes = (command.split(' ', 1) + [''])[:2]
         command_name = self._get_command_from_alias(command_name)
 
@@ -77,7 +77,7 @@ class Commands:
 
     async def help(self, attributes, message):
         command_list = [func for func in dir(self) if func[0] != '_']
-        command_list.remove('do_command')
+        command_list.remove('handle_message')
         command_list = ''.join('    `{}`\n'.format(c) for c in command_list)
 
         model_list = [cls for cls in dir(models) if cls[0].isupper()]
