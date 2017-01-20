@@ -4,21 +4,12 @@ import sqlite3
 from contextlib import closing
 
 
-class ModuleInstance:
+class Database:
     def __init__(self):
-        self._instance = None
+        self.bot = None
+        self.database = None
 
     def init(self, bot, db_name='levbot.db'):
-        self._instance = Database(bot, db_name)
-
-    def __getattr__(self, name):
-        return getattr(self._instance, name)
-
-sys.modules[__name__] = ModuleInstance()
-
-
-class Database:
-    def __init__(self, bot, db_name='levbot.db'):
         self.bot = bot
 
         self.database = sqlite3.connect(db_name)
@@ -140,3 +131,5 @@ class Database:
         )
 
         return self.execute(query, fields)
+
+sys.modules[__name__] = Database()
