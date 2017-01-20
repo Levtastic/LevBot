@@ -5,7 +5,6 @@ import settings
 
 from types import MappingProxyType
 from collections import defaultdict
-from concurrent.futures import CancelledError
 from modules import database
 from . import model_commands
 
@@ -34,6 +33,13 @@ class Commands:
     @property
     def register_handler(self):
         return self.root.register_handler
+
+    def handler(self, command):
+        def decorator(func):
+            self.register_handler(func, command)
+            return func
+
+        return decorator
 
     async def handle_message(self, message):
         command = self._get_command(message)
