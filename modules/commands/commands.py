@@ -15,14 +15,21 @@ class Commands:
         self.bot = bot
         self.root = CommandHandler('__root__')
 
-    def register_handler(self, command, coroutine):
-        self.root.register_handler(command, coroutine)
+        self.register_handler(self.help, 'help')
+        self.register_handler(self.add, 'add')
+        self.register_handler(self.edit, 'edit')
+        self.register_handler(self.remove, 'remove')
+        self.register_handler(self.list, 'list')
+
+    @property
+    def register_handler(self):
+        return self.root.register_handler
 
     async def handle_message(self, message):
         command = self._get_command(message)
 
         if command and self._is_admin(message.author):
-            await self._do_command(command, message)
+            self.root.handle(command, message)
 
     def _get_command(self, message):
         prefixes = (
@@ -44,42 +51,6 @@ class Commands:
             return True
 
         return bool(database.get_Admin_by_user_did(member.id))
-
-    async def _do_command(self, command, message):
-        command_name, command_attributes = (command.split(' ', 1) + [''])[:2]
-        command_name = self._get_command_from_alias(command_name)
-
-        try:
-            command_func = getattr(self, command_name.lower())
-
-        except AttributeError:
-            return
-
-        await self._insulate(command_func, command_attributes, message)
-
-    def _get_command_from_alias(self, command):
-        alias = database.get_CommandAlias_by_alias(command)
-        return alias.command if alias else command
-
-    async def _insulate(self, command_func, command_attributes, message):
-        try:
-            return await command_func(command_attributes, message)
-
-        except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
-            raise
-
-        except BaseException as ex:
-            logging.exception(
-                'Error executing command'
-            )
-
-            await self.bot.send_message(
-                message.channel,
-                '{}: {!s}'.format(
-                    type(ex).__name__,
-                    ex
-                )
-            )
 
     async def help(self, attributes, message):
         command_list = [func for func in dir(self) if func[0] != '_']
@@ -365,15 +336,15 @@ class CommandHandler:
         return self._command
 
     @property
-    def is_end(self):
-        return not self._sub_handlers
+    def coroutines(self):
+        return list(self._coroutines)
 
     @property
-    def coroutines(self):
-        return self._coroutines
+    def is_leaf(self):
+        return not self._sub_handlers
 
     def ensure_sub_handlers(self, commands):
-        command, sub_commands = commands.split(' ', 1)
+        command, sub_commands = (commands.split(' ', 1) + [''])[:2]
         handler = self._ensure_sub_handler(command)
 
         if sub_commands:
@@ -383,31 +354,35 @@ class CommandHandler:
 
     def _ensure_sub_handler(self, command):
         if command not in self._sub_handlers:
-            self._sub_handlers[command] = self.__class__(command)
+            handler = self.__class__(command)
+            self._sub_handlers[command] = handler
 
         return self._sub_handlers[command]
 
-    def register_handler(self, *args): # command=None, coroutine
-        if len(args) == 1:
-            self._coroutines.append(args[0])
-            return
+    def register_handler(self, coroutine, command=None):
+        if not command:
+            self._coroutines.append(coroutine)
+            return self
 
-        self.ensure_sub_handlers(args[0]).register_handler(args[1])
+        return self.ensure_sub_handlers(command).register_handler(coroutine)
 
-    def get(self, commands):
-        command, sub_commands = commands.split(' ', 1)
+    def get(self, command_text):
+        command, sub_commands = (command_text.split(' ', 1) + [''])[:2]
+        command = self._get_command_from_alias(command)
 
-        if command not in self._sub_handlers:
-            return (self, commands)
+        try:
+            return self._sub_handlers[command].get(sub_commands)
 
-        handler = self._sub_handlers[command]
+        except KeyError:
+            return (self, command_text)
 
-        if sub_commands:
-            return handler.get(sub_commands)
-
-        return (handler, '')
+    def _get_command_from_alias(self, command):
+        alias = database.get_CommandAlias_by_alias(command)
+        return alias.command if alias else command
 
     def handle(self, command, message):
         handler, attributes = self.get(command)
-        for coro in handler.coroutines:
-            asyncio.ensure_future(coro(attributes, message))
+        for coroutine in handler.coroutines:
+            asyncio.ensure_future(coroutine(attributes, message))
+
+        return bool(handler.coroutines)
