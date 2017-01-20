@@ -24,6 +24,7 @@ class Commands:
         self.register_handler(self._edit_alert, 'edit alert')
         
         self.register_handler(self.remove, 'remove')
+        self.register_handler(self._remove_alert, 'remove alert')
         
         self.register_handler(self.list, 'list')
         self.register_handler(self._list_channels, 'list channels')
@@ -96,14 +97,7 @@ class Commands:
 
     async def remove(self, attributes, message):
         remove_type, remove_attributes = (attributes.split(' ', 1) + [''])[:2]
-
-        try:
-            command_func = getattr(self, '_remove_' + remove_type.lower())
-
-        except AttributeError:
-            return await model_commands.remove(self.bot, remove_type, remove_attributes, message)
-
-        return await command_func(remove_attributes, message)
+        return await model_commands.remove(self.bot, remove_type, remove_attributes, message)
 
     async def list(self, attributes, message):
         list_type, list_filter = (attributes.split(' ', 1) + [''])[:2]
