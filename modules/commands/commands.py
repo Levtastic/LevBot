@@ -3,11 +3,11 @@ import asyncio
 import discord
 import settings
 
+from types import MappingProxyType
 from collections import defaultdict
 from concurrent.futures import CancelledError
 from modules import database
 from . import model_commands
-from ..database import models
 
 
 class Commands:
@@ -63,29 +63,27 @@ class Commands:
         return bool(database.get_Admin_by_user_did(member.id))
 
     async def help(self, attributes, message):
-        command_list = [func for func in dir(self) if func[0] != '_']
-        command_list.remove('handle_message')
-        command_list = ''.join('    `{}`\n'.format(c) for c in command_list)
+        handler, remainder = self.root.get(attributes)
 
-        model_list = [cls for cls in dir(models) if cls[0].isupper()]
-        model_list = ''.join('    `{}`\n'.format(m) for m in model_list)
+        if remainder:
+            cmd = attributes[:-len(remainder)].strip()
+        else:
+            cmd = attributes.strip()
 
-        await self.bot.send_message(
-            message.channel,
-            '.\n' +
-            'Available commands:\n' +
-            command_list +
-            '\n' +
-            'Custom types:\n' +
-            '    `alert`/`alerts`\n' +
-            '\n' +
-            'List-only types:\n' +
-            '    `channels`\n' +
-            '    `users`\n' +
-            '\n' +
-            'Models:\n' +
-            model_list
+        desc = '\n{}\n'.format('-' * 50).join(
+            coro.__doc__ for coro in handler.coroutines if coro.__doc__
         )
+
+        cmds = '\n'.join(
+            '{} {}'.format(cmd, key) for key in handler.sub_handlers.keys()
+        )
+
+        help_text = '.\n'
+        help_text += '__{}__:\n\n'.format(cmd) if cmd else ''
+        help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
+        help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
+
+        await self.bot.send_message(message.channel, help_text)
 
     async def add(self, attributes, message):
         add_type, add_attributes = (attributes.split(' ', 1) + [''])[:2]
@@ -320,6 +318,10 @@ class CommandHandler:
     @property
     def coroutines(self):
         return list(self._coroutines)
+
+    @property
+    def sub_handlers(self):
+        return MappingProxyType(self._sub_handlers)
 
     @property
     def is_leaf(self):
