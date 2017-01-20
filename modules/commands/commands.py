@@ -21,6 +21,7 @@ class Commands:
         self.register_handler(self._add_alert, 'add alert')
         
         self.register_handler(self.edit, 'edit')
+        self.register_handler(self._edit_alert, 'edit alert')
         
         self.register_handler(self.remove, 'remove')
         
@@ -91,14 +92,7 @@ class Commands:
 
     async def edit(self, attributes, message):
         edit_type, edit_attributes = (attributes.split(' ', 1) + [''])[:2]
-
-        try:
-            command_func = getattr(self, '_edit_' + edit_type.lower())
-
-        except AttributeError:
-            return await model_commands.edit(self.bot, edit_type, edit_attributes, message)
-
-        return await command_func(edit_attributes, message)
+        return await model_commands.edit(self.bot, edit_type, edit_attributes, message)
 
     async def remove(self, attributes, message):
         remove_type, remove_attributes = (attributes.split(' ', 1) + [''])[:2]
