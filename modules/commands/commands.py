@@ -1,3 +1,4 @@
+import sys
 import logging
 import asyncio
 import discord
@@ -10,8 +11,8 @@ from . import model_commands
 
 
 class Commands:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
+        self.bot = None
         self.root = CommandHandler('__root__')
 
         self.register_handler(self.help, 'help')
@@ -29,6 +30,9 @@ class Commands:
         self.register_handler(self._list_channels, 'list channels')
         self.register_handler(self._list_users, 'list users')
         self.register_handler(self._list_alerts, 'list alerts')
+
+    def init(self, bot):
+        self.bot = bot
 
     @property
     def register_handler(self):
@@ -376,3 +380,6 @@ class CommandHandler:
             asyncio.ensure_future(coroutine(attributes, message))
 
         return bool(handler.coroutines)
+
+
+sys.modules[__name__] = Commands()
