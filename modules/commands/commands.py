@@ -18,6 +18,7 @@ class Commands:
         self.register_handler(self.help, 'help')
         
         self.register_handler(self.add, 'add')
+        self.register_handler(self._add_alert, 'add alert')
         
         self.register_handler(self.edit, 'edit')
         
@@ -86,14 +87,7 @@ class Commands:
 
     async def add(self, attributes, message):
         add_type, add_attributes = (attributes.split(' ', 1) + [''])[:2]
-
-        try:
-            command_func = getattr(self, '_add_' + add_type.lower())
-
-        except AttributeError:
-            return await model_commands.add(self.bot, add_type, add_attributes, message)
-
-        return await command_func(add_attributes, message)
+        return await model_commands.add(self.bot, add_type, add_attributes, message)
 
     async def edit(self, attributes, message):
         edit_type, edit_attributes = (attributes.split(' ', 1) + [''])[:2]
