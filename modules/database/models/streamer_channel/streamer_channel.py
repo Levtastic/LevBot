@@ -1,12 +1,13 @@
 from discord.utils import cached_slot_property
 from discord import NotFound
 from ..model import Model
+from modules import database
 
 
 class StreamerChannel(Model):
     @cached_slot_property('_streamer')
     def streamer(self):
-        return self.db.get_Streamer_by_id(self.streamer_id)
+        return database.get_Streamer_by_id(self.streamer_id)
 
     @cached_slot_property('_channel')
     def channel(self):
@@ -25,7 +26,7 @@ class StreamerChannel(Model):
 
     @cached_slot_property('_streamer_messages')
     def streamer_messages(self):
-        sm = self.bot.db.get_StreamerMessage()
+        sm = database.get_StreamerMessage()
         return sm.get_list_by(
             streamer_id=self.streamer_id,
             channel_did=self.channel_did

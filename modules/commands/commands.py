@@ -5,6 +5,7 @@ import settings
 
 from collections import defaultdict
 from concurrent.futures import CancelledError
+from modules import database
 from . import model_commands
 from ..database import models
 
@@ -42,7 +43,7 @@ class Commands:
         if str(member) in settings.admin_usernames:
             return True
 
-        return bool(self.bot.db.get_Admin_by_user_did(member.id))
+        return bool(database.get_Admin_by_user_did(member.id))
 
     async def _do_command(self, command, message):
         command_name, command_attributes = (command.split(' ', 1) + [''])[:2]
@@ -57,7 +58,7 @@ class Commands:
         await self._insulate(command_func, command_attributes, message)
 
     def _get_command_from_alias(self, command):
-        alias = self.bot.db.get_CommandAlias_by_alias(command)
+        alias = database.get_CommandAlias_by_alias(command)
         return alias.command if alias else command
 
     async def _insulate(self, command_func, command_attributes, message):
@@ -217,9 +218,9 @@ class Commands:
                 'Syntax: `add alert <username> <channel name/id or "here"> <template>`'
             )
 
-        streamer = self.bot.db.get_Streamer_by_username(username.lower())
+        streamer = database.get_Streamer_by_username(username.lower())
         if not streamer:
-            streamer = self.bot.db.get_Streamer()
+            streamer = database.get_Streamer()
             streamer.username = username.lower()
             streamer.save()
 
@@ -232,7 +233,7 @@ class Commands:
                 )
             )
 
-        streamer_channel = self.bot.db.get_StreamerChannel()
+        streamer_channel = database.get_StreamerChannel()
         if streamer_channel.get_list_by(streamer_id=streamer.id,
                                     channel_did=channel.id):
             return await self.bot.send_message(
@@ -284,7 +285,7 @@ class Commands:
                 'Syntax: `remove alert <username> <channel name/id or "here">`'
             )
 
-        streamer = self.bot.db.get_Streamer_by_username(username.lower())
+        streamer = database.get_Streamer_by_username(username.lower())
         if not streamer:
             return await self.bot.send_message(
                 message.channel,
@@ -300,7 +301,7 @@ class Commands:
                 )
             )
 
-        streamer_channel = self.bot.db.get_StreamerChannel().get_by(
+        streamer_channel = database.get_StreamerChannel().get_by(
             streamer_id=streamer.id,
             channel_did=channel.id
         )
@@ -331,7 +332,7 @@ class Commands:
         username_filter = username_filter.lower()
         return_text = ''
 
-        streamers = self.bot.db.get_Streamer_list()
+        streamers = database.get_Streamer_list()
 
         for streamer in streamers:
             if username_filter not in streamer.username.lower():

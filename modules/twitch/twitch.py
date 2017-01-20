@@ -7,6 +7,7 @@ import settings
 
 from collections import defaultdict
 from concurrent.futures import CancelledError
+from modules import database
 
 
 class Twitch:
@@ -22,7 +23,7 @@ class Twitch:
         await self.bot.wait_until_ready()
 
         while not self.bot.is_closed:
-            streamers = self.bot.db.get_Streamer_list()
+            streamers = database.get_Streamer_list()
 
             if streamers:
                 await self.insulate(self.do_streamer_alerts, streamers)
@@ -87,7 +88,7 @@ class Twitch:
     async def send_message(self, streamer_channel, text):
         message = await self.bot.send_message(streamer_channel.channel, text)
 
-        streamer_message = self.bot.db.get_StreamerMessage()
+        streamer_message = database.get_StreamerMessage()
         streamer_message.channel_did = streamer_channel.channel.id
         streamer_message.message_did = message.id
 

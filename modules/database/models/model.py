@@ -2,13 +2,13 @@ import inspect
 import logging
 
 from types import MappingProxyType
+from modules import database
 
 
 class Model(object):
     _table_exists = False # tracked at the class-level, not the object-level
 
-    def __init__(self, db, bot):
-        self.db = db
+    def __init__(self, bot):
         self.bot = bot
 
         self._init_attributes()
@@ -97,11 +97,11 @@ class Model(object):
                     name = ?
         """
 
-        return int(self.db.fetch_value(query, self.table)) > 0
+        return int(database.fetch_value(query, self.table)) > 0
 
     def build_table(self):
         with open(inspect.getfile(type(self))[:-3] + '.sql', 'r') as file:
-            self.db.execute(file.read(), script=True)
+            database.execute(file.read(), script=True)
 
     def get_list_by(self, **kwargs):
         if not kwargs:
@@ -118,14 +118,14 @@ class Model(object):
             self.table,
             ' AND '.join('{0} = :{0}'.format(name) for name in kwargs.keys())
         )
-        data = self.db.fetch_all(query, kwargs)
+        data = database.fetch_all(query, kwargs)
 
         return [self._build_from_fields(fields) for fields in data]
 
     def _build_from_fields(self, fields):
         fields = dict(fields)
 
-        model = self.__class__(self.db, self.bot)
+        model = self.__class__(self.bot)
         model._id = fields.pop('id')
         for field in model.fields:
             setattr(model, field, fields.pop(field))
@@ -147,7 +147,7 @@ class Model(object):
             ORDER BY
                 {}
         """.format(self.table, order_by)
-        data = self.db.fetch_all(query)
+        data = database.fetch_all(query)
 
         return [self._build_from_fields(fields) for fields in data]
 
@@ -159,10 +159,10 @@ class Model(object):
         fields = {field: getattr(self, field) for field in self.fields}
 
         if self.id is None:
-            self._id = self.db.insert(self.table, fields)
+            self._id = database.insert(self.table, fields)
 
         else:
-            self.db.update(self.table, fields, id=self.id)
+            database.update(self.table, fields, id=self.id)
 
     def delete(self):
         if not self.id:
@@ -175,5 +175,5 @@ class Model(object):
                 id = ?
         """.format(self.table)
 
-        self.db.execute(query, self.id)
+        database.execute(query, self.id)
         self._id = None

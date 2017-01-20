@@ -1,7 +1,20 @@
+import sys
 import sqlite3
 
 from contextlib import closing
-from . import models
+
+
+class ModuleInstance:
+    def __init__(self):
+        self._instance = None
+
+    def init(self, bot, db_name='levbot.db'):
+        self._instance = Database(bot, db_name)
+
+    def __getattr__(self, name):
+        return getattr(self._instance, name)
+
+sys.modules[__name__] = ModuleInstance()
 
 
 class Database:
@@ -47,8 +60,10 @@ class Database:
         return getattr(model, func_name)
 
     def get_initialised_model(self, name):
+        # imported here so database will be initialised when models import it
+        from . import models
         model = getattr(models, name)
-        return model(self, self.bot)
+        return model(self.bot)
 
     def execute(self, query, parameters=(), script=False):
         parameters = self._convert_parameters(parameters)

@@ -11,7 +11,8 @@ class LevBot(discord.Client):
     def __init__(self):
         super().__init__()
 
-        self.db = modules.Database(self)
+        modules.database.init(self)
+
         self.commands = modules.Commands(self)
 
         modules.Twitch(self)
