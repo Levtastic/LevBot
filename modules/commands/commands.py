@@ -16,10 +16,17 @@ class Commands:
         self.root = CommandHandler('__root__')
 
         self.register_handler(self.help, 'help')
+        
         self.register_handler(self.add, 'add')
+        
         self.register_handler(self.edit, 'edit')
+        
         self.register_handler(self.remove, 'remove')
+        
         self.register_handler(self.list, 'list')
+        self.register_handler(self._list_channels, 'list channels')
+        self.register_handler(self._list_users, 'list users')
+        self.register_handler(self._list_alerts, 'list alerts')
 
     @property
     def register_handler(self):
@@ -112,14 +119,7 @@ class Commands:
 
     async def list(self, attributes, message):
         list_type, list_filter = (attributes.split(' ', 1) + [''])[:2]
-
-        try:
-            command_func = getattr(self, '_list_' + list_type.lower())
-
-        except AttributeError:
-            return await model_commands.list(self.bot, list_type, list_filter, message)
-
-        return await command_func(list_filter, message)
+        return await model_commands.list(self.bot, list_type, list_filter, message)
 
     async def _list_channels(self, list_filter, message):
         channels = defaultdict(list)
