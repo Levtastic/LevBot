@@ -12,7 +12,8 @@ class LevBot(discord.Client):
         super().__init__()
 
         modules.database.init(self)
-        modules.commands.init(self)
+
+        self.commands = modules.Commands(self)
 
         modules.Twitch(self)
         modules.ConsoleInput(self)
@@ -25,7 +26,7 @@ class LevBot(discord.Client):
         ))
 
     async def on_message(self, message):
-        await modules.commands.handle_message(message)
+        self.commands.handle_message(message)
 
 
 def set_up_logging():
