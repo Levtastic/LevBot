@@ -11,7 +11,7 @@ class Commands:
     def __init__(self, bot):
         self.bot = bot
         self.root = CommandHandler('__root__')
-        self.register_handler(self.help, 'help')
+        self.register_handler(self.cmd_help, 'help')
 
         self.register_sub_handlers()
 
@@ -26,7 +26,7 @@ class Commands:
 
             getattr(handlers, sub_handler)(self)
 
-    async def help(self, attributes, message):
+    async def cmd_help(self, attributes, message):
         handler, remainder = self.root.get(attributes)
 
         if remainder:
