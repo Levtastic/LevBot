@@ -44,6 +44,7 @@ class BotCommands:
     def get_channels_text_pieces(self, channels):
         for server in channels.keys():
             yield 'Server: `{}`'.format(server)
+
             for channel in channels[server]:
                 channel_text = '    `{0.id}`: `{0.name}`'.format(channel)
 
@@ -80,6 +81,7 @@ class BotCommands:
     def get_users_text_pieces(self, members):
         for server in members.keys():
             yield 'Server: `{}`'.format(server)
+
             for member in members[server]:
                 member_text = '    `{0.id}`: `{0.name}`'.format(member)
 
