@@ -107,6 +107,15 @@ class Model(object):
         if not kwargs:
             return self.get_all()
 
+        for field in kwargs:
+            if field not in self.fields:
+                raise AttributeError(
+                    'Field "{}" not found in model "{}"'.format(
+                        field,
+                        type(self).__name__
+                    )
+                )
+
         query = """
             SELECT
                 *
@@ -116,7 +125,7 @@ class Model(object):
                 {}
         """.format(
             self.table,
-            ' AND '.join('{0} = :{0}'.format(name) for name in kwargs.keys())
+            ' AND '.join('{0} = :{0}'.format(name) for name in kwargs)
         )
         data = database.fetch_all(query, kwargs)
 
