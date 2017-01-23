@@ -1,4 +1,5 @@
 from functools import partial
+from sqlite3 import IntegrityError
 from modules import database
 from modules.database import models
 from ..command_handler import CommandException
@@ -43,8 +44,13 @@ class ModelCommands:
 
         self.set_model_attributes(model, pairs)
 
-        # add try/except when you know what this can throw
-        model.save()
+        try:
+            model.save()
+
+        except IntegrityError:
+            raise CommandException(
+                'One or more required fields were left out of the command'
+            )
 
         await self.bot.send_message(
             message.channel,
