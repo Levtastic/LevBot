@@ -107,8 +107,10 @@ class Model(object):
         if not kwargs:
             return self.get_all()
 
+        all_fields = ['id'] + [field for field in self.fields]
+
         for field in kwargs:
-            if field not in self.fields:
+            if field not in all_fields:
                 raise AttributeError(
                     'Field "{}" not found in model "{}"'.format(
                         field,
