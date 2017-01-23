@@ -41,7 +41,7 @@ class Commands:
         )
 
         help_text = '.\n'
-        help_text += '__{}__:\n\n'.format(cmd) if cmd else ''
+        help_text += '`{}`\n\n'.format(cmd) if cmd else ''
         help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
 
