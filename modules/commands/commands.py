@@ -11,13 +11,13 @@ class Commands:
         self.root = CommandHandler(bot, '__root__')
         self.register_handler(self.cmd_help, 'help')
 
-        self.register_sub_handlers()
+        self._register_sub_handlers()
 
     @property
     def register_handler(self):
         return self.root.register_handler
 
-    def register_sub_handlers(self):
+    def _register_sub_handlers(self):
         for sub_handler in dir(handlers):
             if not sub_handler[0].isupper():
                 continue
@@ -34,7 +34,7 @@ class Commands:
         else:
             cmd = attributes.strip()
 
-        desc = self.get_command_description(handler)
+        desc = self._get_command_description(handler)
 
         cmds = '\n'.join(
             '{} {}'.format(cmd, key) for key in handler.sub_handlers.keys()
@@ -47,17 +47,17 @@ class Commands:
 
         await self.bot.send_message(message.channel, help_text)
 
-    def get_command_description(self, handler):
-        pieces = self.get_comment_description_pieces(handler)
+    def _get_command_description(self, handler):
+        pieces = self._get_comment_description_pieces(handler)
         return '\n{}\n'.format('-' * 50).join(pieces)
 
-    def get_comment_description_pieces(self, handler):
+    def _get_comment_description_pieces(self, handler):
         for coroutine in handler.coroutines:
-            description = self.strip_command_description(coroutine.__doc__)
+            description = self._strip_command_description(coroutine.__doc__)
             if description:
                 yield description
 
-    def strip_command_description(self, description):
+    def _strip_command_description(self, description):
         if not description:
             return description
 
