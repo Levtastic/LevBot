@@ -107,7 +107,7 @@ class Model(object):
         if not kwargs:
             return self.get_all()
 
-        all_fields = ['id'] + [field for field in self.fields]
+        all_fields = list(self.fields) + ['id']
 
         for field in kwargs:
             if field not in all_fields:
