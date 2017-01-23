@@ -67,11 +67,11 @@ class CommandHandler:
     def handle(self, command, message):
         handler, attributes = self.get(command)
         for coroutine in handler.coroutines:
-            asyncio.ensure_future(self.wrapper(coroutine, attributes, message))
+            asyncio.ensure_future(self._wrapper(coroutine, attributes, message))
 
         return bool(handler.coroutines)
 
-    async def wrapper(self, coroutine, attributes, message):
+    async def _wrapper(self, coroutine, attributes, message):
         try:
             await coroutine(attributes, message)
 
