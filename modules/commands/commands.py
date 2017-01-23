@@ -25,6 +25,8 @@ class Commands:
             getattr(handlers, sub_handler)(self)
 
     async def cmd_help(self, attributes, message):
+        """Offers help on other commands, and lists sub-commands"""
+
         handler, remainder = self.root.get(attributes)
 
         if remainder:
@@ -32,9 +34,7 @@ class Commands:
         else:
             cmd = attributes.strip()
 
-        desc = '\n{}\n'.format('-' * 50).join(
-            coro.__doc__ for coro in handler.coroutines if coro.__doc__
-        )
+        desc = self.get_command_description(handler)
 
         cmds = '\n'.join(
             '{} {}'.format(cmd, key) for key in handler.sub_handlers.keys()
@@ -46,6 +46,22 @@ class Commands:
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
 
         await self.bot.send_message(message.channel, help_text)
+
+    def get_command_description(self, handler):
+        docs = []
+
+        for coroutine in handler.coroutines:
+            description = self.strip_command_description(coroutine.__doc__)
+            if description:
+                docs.append(description)
+
+        return '\n{}\n'.format('-' * 50).join(docs)
+
+    def strip_command_description(self, description):
+        if not description:
+            return description
+
+        return '\n'.join(line.strip() for line in description.split('\n'))
 
     def handle_message(self, message):
         command = self._get_command(message)

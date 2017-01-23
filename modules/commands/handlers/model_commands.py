@@ -19,13 +19,24 @@ class ModelCommands:
 
     def register_model(self, commands, model):
         for command in ('add', 'edit', 'remove', 'list'):
-            func_name = 'cmd_{}'.format(command)
             commands.register_handler(
-                partial(getattr(self, func_name), model),
+                self.get_partial(command, model),
                 '{} {}'.format(command, model)
             )
 
+    def get_partial(self, command, model):
+        func_name = 'cmd_{}'.format(command)
+        native_func = getattr(self, func_name)
+        partial_func = partial(native_func, model)
+        partial_func.__doc__ = native_func.__doc__
+        return partial_func
+
     async def cmd_add(self, model_name, attributes, message):
+        """Adds a model to the database manually
+
+        The syntax of this command is determined at runtime
+        To see it, run the command without any parameters"""
+
         model = self.get_model(model_name)
 
         syntax_message = 'Syntax: `add {} {}`'.format(
@@ -82,6 +93,11 @@ class ModelCommands:
             setattr(model, field, value)
 
     async def cmd_edit(self, model_name, attributes, message):
+        """Edits a model in the database manually
+
+        The syntax of this command is determined at runtime
+        To see it, run the command without any parameters"""
+
         model = self.get_model(model_name)
 
         syntax_message = 'Syntax: `edit {} <search_key> = <search_value>, {}`'.format(
@@ -137,6 +153,11 @@ class ModelCommands:
         return models[0]
 
     async def cmd_remove(self, model_name, attributes, message):
+        """Removes a model from the database manually
+
+        The syntax of this command is determined at runtime
+        To see it, run the command without any parameters"""
+
         model = self.get_model(model_name)
 
         syntax_message = 'Syntax: `remove {} <key> = <value>`'.format(model_name)
@@ -160,6 +181,11 @@ class ModelCommands:
         )
 
     async def cmd_list(self, model_name, attributes, message):
+        """Lists models in the database
+
+        The syntax of this command is determined at runtime
+        To see it, run the command without any parameters"""
+
         model = self.get_model(model_name)
 
         if attributes:

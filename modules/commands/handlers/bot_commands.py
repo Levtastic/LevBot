@@ -14,6 +14,11 @@ class BotCommands:
         commands.register_handler(self.cmd_list_users, 'list users')
 
     async def cmd_list_channels(self, attributes, message):
+        """Lists channels the bot can currently see
+
+        Syntax: `list channels`
+        or `list channels <name>`"""
+
         channels = defaultdict(list)
 
         for server, channel in self.get_text_channels(attributes):
@@ -54,6 +59,11 @@ class BotCommands:
                 yield channel_text
 
     async def cmd_list_users(self, attributes, message):
+        """Lists users the bot can currently see
+
+        Syntax: `list users`
+        or `list users <name>`"""
+
         members = defaultdict(list)
 
         for server, member in self.get_members(attributes):
