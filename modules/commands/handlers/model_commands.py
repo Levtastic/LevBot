@@ -1,6 +1,7 @@
 from functools import partial
 from modules import database
 from modules.database import models
+from ..command_handler import CommandException
 
 
 class ModelCommands:
@@ -13,49 +14,36 @@ class ModelCommands:
             if not model[0].isupper():
                 continue
 
+            self.register_model(commands, model)
+
+    def register_model(self, commands, model):
+        for command in ('add', 'edit', 'remove', 'list'):
+            func_name = 'cmd_{}'.format(command)
             commands.register_handler(
-                partial(self.add, model),
-                'add ' + model
-            )
-            commands.register_handler(
-                partial(self.edit, model),
-                'edit ' + model
-            )
-            commands.register_handler(
-                partial(self.remove, model),
-                'remove ' + model
-            )
-            commands.register_handler(
-                partial(self.list, model),
-                'list ' + model
+                partial(getattr(self, func_name), model),
+                '{} {}'.format(command, model)
             )
 
-    async def add(self, model_name, add_attributes, message):
-        model = getattr(database, 'get_{}'.format(model_name))()
+    async def cmd_add(self, model_name, attributes, message):
+        model = self.get_model(model_name)
 
-        if '=' not in add_attributes:
-            return await self.bot.send_message(
-                message.channel,
-                'Syntax: `add {} {}`'.format(
-                    model_name,
-                    ', '.join('{} = <value>'.format(field) for field in model.fields.keys())
-                )
-            )
+        syntax_message = 'Syntax: `add {} {}`'.format(
+            model_name,
+            ', '.join('{} = <value>'.format(field) for field in model.fields)
+        )
 
-        keyvaluepairs = add_attributes.split(',', len(model.fields) - 1)
+        try:
+            pairs = list(self.get_attribute_pairs(attributes, model))
 
-        for keyvaluepair in keyvaluepairs:
-            field, value = keyvaluepair.split('=', 1)
-            field, value = field.strip(), value.strip()
+        except ValueError:
+            raise CommandException(syntax_message)
 
-            if field not in model.fields:
-                return await self.bot.send_message(
-                    message.channel,
-                    'Unrecognised field `{}`'.format(field)
-                )
+        if not pairs:
+            raise CommandException(syntax_message)
 
-            setattr(model, field, value)
+        self.set_model_attributes(model, pairs)
 
+        # add try/except when you know what this can throw
         model.save()
 
         await self.bot.send_message(
@@ -66,45 +54,51 @@ class ModelCommands:
             )
         )
 
-    async def edit(self, model_name, edit_attributes, message):
-        model = getattr(database, 'get_{}'.format(model_name))()
+    def get_model(self, model_name):
+        factory_name = 'get_{}'.format(model_name)
+        factory = getattr(database, factory_name)
+        return factory()
 
-        if '=' not in edit_attributes:
-            return await self.bot.send_message(
-                message.channel,
-                'Syntax: `edit {} <search_key> = <search_value>, {}`'.format(
-                    model_name,
-                    ', '.join('{} = <value>'.format(field) for field in model.fields.keys())
-                )
-            )
+    def get_attribute_pairs(self, attributes, model, count_override=None):
+        count = (count_override or len(model.fields)) - 1
 
-        keyvaluepairs = edit_attributes.split(',', len(model.fields))
-
-        search_field, search_value = keyvaluepairs.pop(0).split('=', 1)
-        models = model.get_list_by(**{search_field.strip(): search_value.strip()})
-
-        if len(models) != 1:
-            return await self.bot.send_message(
-                message.channel,
-                'Found {} `{}` models. Unable to remove.'.format(
-                    len(models),
-                    model_name
-                )
-            )
-
-        model = models[0]
-
-        for keyvaluepair in keyvaluepairs:
-            field, value = keyvaluepair.split('=', 1)
+        for pair in attributes.split(',', count):
+            field, value = pair.split('=', 1)
             field, value = field.strip(), value.strip()
 
-            if field not in model.fields:
-                return await self.bot.send_message(
-                    message.channel,
-                    'Unrecognised field `{}`'.format(field)
-                )
+            if not field in model.fields:
+                raise CommandException('Unrecognised field `{}`'.format(field))
 
+            yield field, value
+
+    def set_model_attributes(self, model, pairs):
+        for field, value in pairs:
             setattr(model, field, value)
+
+    async def cmd_edit(self, model_name, attributes, message):
+        model = self.get_model(model_name)
+
+        syntax_message = 'Syntax: `edit {} <search_key> = <search_value>, {}`'.format(
+            model_name,
+            ', '.join('{} = <value>'.format(field) for field in model.fields.keys())
+        )
+
+        try:
+            print(repr(attributes))
+            pairs = list(self.get_attribute_pairs(
+                attributes,
+                model
+            ))
+
+        except ValueError:
+            raise CommandException(syntax_message)
+
+        if len(pairs) < 2:
+            raise CommandException(syntax_message)
+
+        model = self.search_for_model(model, *pairs.pop(0))
+
+        self.set_model_attributes(model, pairs)
 
         model.save()
 
@@ -116,43 +110,65 @@ class ModelCommands:
             )
         )
 
-    async def remove(self, model_name, remove_attributes, message):
-        model = getattr(database, 'get_{}'.format(model_name))()
+    def search_for_model(self, model, field, value):
+        models = model.get_list_by(**{field: value})
 
-        if '=' not in remove_attributes:
-            return await self.bot.send_message(
-                message.channel,
-                'Syntax: `remove {} <key> = <value>`'.format(model_name)
-            )
-
-        field, value = remove_attributes.split('=', 1)
-        models = model.get_list_by(**{field.strip(): value.strip()})
-
-        if len(models) != 1:
-            return await self.bot.send_message(
-                message.channel,
-                'Found {} `{}` models. Unable to remove.'.format(
-                    len(models),
-                    model_name
+        if not models:
+            raise CommandException(
+                'No {} models found with these parameters'.format(
+                    type(model).__name__
                 )
             )
 
-        models[0].delete()
+        if len(models) != 1:
+            raise CommandException(
+                'This operation only works on one {} at a time, but we found {}'.format(
+                    type(model).__name__,
+                    len(models)
+                )
+            )
+
+        return models[0]
+
+    async def cmd_remove(self, model_name, attributes, message):
+        model = self.get_model(model_name)
+
+        syntax_message = 'Syntax: `remove {} <key> = <value>`'.format(model_name)
+
+        try:
+            pairs = list(self.get_attribute_pairs(attributes, model))
+
+        except ValueError:
+            raise CommandException(syntax_message)
+
+        if len(pairs) != 1:
+            raise CommandException(syntax_message)
+
+        model = self.search_for_model(model, *pairs[0])
+
+        model.delete()
 
         await self.bot.send_message(
             message.channel,
             '`{}` deleted'.format(model_name)
         )
 
-    async def list(self, model_name, list_filter, message):
-        model = getattr(database, 'get_{}'.format(model_name))()
+    async def cmd_list(self, model_name, attributes, message):
+        model = self.get_model(model_name)
 
-        if '=' in list_filter:
-            field, value = list_filter.split('=', 1)
-            models = model.get_list_by(**{field.strip(): value.strip()})
+        if attributes:
+            try:
+                pairs = list(self.get_attribute_pairs(attributes, model))
+
+            except ValueError:
+                raise CommandException(
+                    'Syntax: `list {} <key> = <value>`'.format(model_name)
+                )
 
         else:
-            models = model.get_all()
+            pairs = []
+
+        models = self.filter_model(model, pairs)
 
         if not models:
             return await self.bot.send_message(
@@ -164,3 +180,10 @@ class ModelCommands:
             message.channel,
             '.\n' + '\n'.join(str(model) for model in models)
         )
+
+    def filter_model(self, model, pairs):
+        if pairs:
+            list_filter = {field: value for field, value in pairs}
+            return model.get_list_by(**list_filter)
+
+        return model.get_all()
