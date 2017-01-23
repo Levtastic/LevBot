@@ -48,14 +48,14 @@ class Commands:
         await self.bot.send_message(message.channel, help_text)
 
     def get_command_description(self, handler):
-        docs = []
+        pieces = self.get_comment_description_pieces(handler)
+        return '\n{}\n'.format('-' * 50).join(pieces)
 
+    def get_comment_description_pieces(self, handler):
         for coroutine in handler.coroutines:
             description = self.strip_command_description(coroutine.__doc__)
             if description:
-                docs.append(description)
-
-        return '\n{}\n'.format('-' * 50).join(docs)
+                yield description
 
     def strip_command_description(self, description):
         if not description:
