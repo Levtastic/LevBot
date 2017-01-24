@@ -2,6 +2,11 @@ from ..model import Model
 
 
 class User(Model):
+    def _build_from_fields(self, fields):
+        model = super()._build_from_fields(fields)
+        model.blacklisted = bool(model.blacklisted)
+        return model
+
     async def get_user(self):
         try:
             return self._user
@@ -14,6 +19,7 @@ class User(Model):
         return 'users'
 
     def define_fields(self):
-        return (
-            'user_did',
-        )
+        return {
+            'user_did': None,
+            'blacklisted': False,
+        }
