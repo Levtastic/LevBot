@@ -87,7 +87,7 @@ class Commands:
         return ''
 
     def _is_admin(self, member):
-        if str(member) in settings.admin_usernames:
+        if str(member) in settings.owner_usernames:
             return True
 
         return bool(database.get_Admin_by_user_did(member.id))
