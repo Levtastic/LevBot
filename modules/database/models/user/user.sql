@@ -3,6 +3,7 @@ CREATE TABLE
 (
     id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
     user_did TEXT NOT NULL,
+    global_admin INTEGER NOT NULL,
     blacklisted INTEGER NOT NULL
 );
 

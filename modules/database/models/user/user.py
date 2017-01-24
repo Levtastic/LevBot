@@ -4,6 +4,7 @@ from ..model import Model
 class User(Model):
     def _build_from_fields(self, fields):
         model = super()._build_from_fields(fields)
+        model.global_admin = bool(model.global_admin)
         model.blacklisted = bool(model.blacklisted)
         return model
 
@@ -21,5 +22,6 @@ class User(Model):
     def define_fields(self):
         return {
             'user_did': None,
+            'global_admin': False,
             'blacklisted': False,
         }
