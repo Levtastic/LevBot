@@ -90,4 +90,4 @@ class Commands:
         if str(member) in settings.owner_usernames:
             return True
 
-        return bool(database.get_Admin_by_user_did(member.id))
+        return bool(database.get_User_by_user_did(member.id))

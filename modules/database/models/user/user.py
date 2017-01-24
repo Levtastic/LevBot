@@ -1,7 +1,7 @@
 from ..model import Model
 
 
-class Admin(Model):
+class User(Model):
     async def get_user(self):
         try:
             return self._user
@@ -11,7 +11,7 @@ class Admin(Model):
             return self._user
 
     def define_table(self):
-        return 'admins'
+        return 'users'
 
     def define_fields(self):
         return (

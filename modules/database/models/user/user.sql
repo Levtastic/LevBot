@@ -1,14 +1,14 @@
 CREATE TABLE
-    admins
+    users
 (
     id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
     user_did TEXT NOT NULL
 );
 
 CREATE INDEX
-    admins_user_did
+    users_user_did
 ON
-    admins
+    users
     (
         user_did
     );
