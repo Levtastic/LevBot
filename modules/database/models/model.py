@@ -139,7 +139,12 @@ class Model(object):
         model = self.__class__(self.bot)
         model._id = fields.pop('id')
         for field in model.fields:
-            setattr(model, field, fields.pop(field))
+            value = fields.pop(field)
+
+            if type(getattr(model, field)) is bool:
+                value = bool(value)
+
+            setattr(model, field, value)
 
         if fields:
             logging.warning('{} has extra fields in the database: {!r}'.format(

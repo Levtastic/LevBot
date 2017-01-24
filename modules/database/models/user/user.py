@@ -2,12 +2,6 @@ from ..model import Model
 
 
 class User(Model):
-    def _build_from_fields(self, fields):
-        model = super()._build_from_fields(fields)
-        model.global_admin = bool(model.global_admin)
-        model.blacklisted = bool(model.blacklisted)
-        return model
-
     async def get_user(self):
         try:
             return self._user
