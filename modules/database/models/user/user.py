@@ -1,6 +1,9 @@
+import discord
+
 from discord.utils import cached_slot_property
 from ..model import Model
 from modules import database
+from modules import UserLevel
 
 
 class User(Model):
@@ -32,6 +35,14 @@ class User(Model):
                 return user_server.admin
 
         return False
+
+    def get_user_level(self, channel=None):
+        if channel:
+            member = channel.server.get_member(self.user_did)
+            if member:
+                return UserLevel.get(member, channel)
+
+        return UserLevel.get(discord.Object(self.user_did), channel)
 
     def save(self):
         super().save()

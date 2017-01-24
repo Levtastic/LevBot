@@ -1,6 +1,7 @@
 import settings
 
 from modules import database
+from modules import UserLevel
 from .command_handler import CommandHandler
 from . import handlers
 
@@ -66,7 +67,7 @@ class Commands:
     def handle_message(self, message):
         command = self._get_command(message)
 
-        if command and self._is_admin(message.author):
+        if command and self._is_admin(message):
             return self.root.handle(command, message)
 
         return False
@@ -86,8 +87,6 @@ class Commands:
 
         return ''
 
-    def _is_admin(self, member):
-        if str(member) in settings.owner_usernames:
-            return True
-
-        return bool(database.get_User_by_user_did(member.id))
+    def _is_admin(self, message):
+        level = UserLevel.get(message.author, message.channel)
+        return level >= UserLevel.global_bot_admin
