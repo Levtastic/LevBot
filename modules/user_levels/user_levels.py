@@ -51,7 +51,7 @@ class UserLevel(OrderedEnum):
         db_user = database.get_User_by_user_did(member.id)
 
         if db_user and db_user.blacklisted:
-            return UserLevel.blacklisted
+            return cls.blacklisted
 
         if db_user and db_user.global_admin:
             return cls.global_bot_admin
