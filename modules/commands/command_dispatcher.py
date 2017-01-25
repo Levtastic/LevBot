@@ -1,7 +1,12 @@
 import asyncio
 
 from types import MappingProxyType
+from collections import namedtuple
 from modules import database
+from modules import UserLevel
+
+
+Handler = namedtuple('Handler', ('coroutine', 'user_level'))
 
 
 class CommandDispatcher:
@@ -9,15 +14,15 @@ class CommandDispatcher:
         self._bot = bot
         self._command = command
         self._child_dispatchers = {}
-        self._coroutines = []
+        self._handlers = []
 
     @property
     def command(self):
         return self._command
 
     @property
-    def coroutines(self):
-        return list(self._coroutines)
+    def handlers(self):
+        return list(self._handlers)
 
     @property
     def child_dispatchers(self):
@@ -43,12 +48,15 @@ class CommandDispatcher:
 
         return self._child_dispatchers[command]
 
-    def register_handler(self, coroutine, command=None):
+    def register_handler(self, coroutine, command=None, user_level=UserLevel.server_admin):
         if not command:
-            self._coroutines.append(coroutine)
+            self._handlers.append(Handler(coroutine, user_level))
             return self
 
-        return self.ensure_child_dispatchers(command).register_handler(coroutine)
+        return self.ensure_child_dispatchers(command).register_handler(
+            coroutine=coroutine,
+            user_level=user_level
+        )
 
     def get(self, command_text):
         command, sub_commands = (command_text.split(' ', 1) + [''])[:2]
@@ -66,10 +74,14 @@ class CommandDispatcher:
 
     def dispatch(self, command, message):
         dispatcher, attributes = self.get(command)
-        for coroutine in dispatcher.coroutines:
-            asyncio.ensure_future(self._wrapper(coroutine, attributes, message))
+        for handler in dispatcher.handlers:
+            asyncio.ensure_future(self._wrapper(
+                handler.coroutine,
+                attributes,
+                message
+            ))
 
-        return bool(dispatcher.coroutines)
+        return bool(dispatcher.handlers)
 
     async def _wrapper(self, coroutine, attributes, message):
         try:

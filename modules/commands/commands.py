@@ -53,8 +53,8 @@ class Commands:
         return '\n{}\n'.format('-' * 50).join(pieces)
 
     def _get_comment_description_pieces(self, dispatcher):
-        for coroutine in dispatcher.coroutines:
-            description = self._strip_command_description(coroutine.__doc__)
+        for handler in dispatcher.handlers:
+            description = self._strip_command_description(handler.coroutine.__doc__)
             if description:
                 yield description
 
