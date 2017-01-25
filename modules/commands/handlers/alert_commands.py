@@ -1,6 +1,6 @@
 import discord
 from modules import database
-from ..command_handler import CommandException
+from .. import CommandException
 
 
 class AlertCommands:

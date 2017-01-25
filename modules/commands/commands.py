@@ -2,14 +2,14 @@ import settings
 
 from modules import database
 from modules import UserLevel
-from .command_handler import CommandHandler
+from . import CommandDispatcher
 from . import handlers
 
 
 class Commands:
     def __init__(self, bot):
         self.bot = bot
-        self.root = CommandHandler(bot, '__root__')
+        self.root = CommandDispatcher(bot, '__root__')
         self.register_handler(self.cmd_help, 'help')
 
         self._register_sub_handlers()
@@ -28,17 +28,17 @@ class Commands:
     async def cmd_help(self, attributes, message):
         """Offers help on other commands, and lists sub-commands"""
 
-        handler, remainder = self.root.get(attributes)
+        dispatcher, remainder = self.root.get(attributes)
 
         if remainder:
             cmd = attributes[:-len(remainder)].strip()
         else:
             cmd = attributes.strip()
 
-        desc = self._get_command_description(handler)
+        desc = self._get_command_description(dispatcher)
 
         cmds = '\n'.join(
-            '{} {}'.format(cmd, key) for key in handler.sub_handlers.keys()
+            '{} {}'.format(cmd, key) for key in dispatcher.child_dispatchers
         )
 
         help_text = '.\n'
@@ -48,12 +48,12 @@ class Commands:
 
         await self.bot.send_message(message.channel, help_text)
 
-    def _get_command_description(self, handler):
-        pieces = self._get_comment_description_pieces(handler)
+    def _get_command_description(self, dispatcher):
+        pieces = self._get_comment_description_pieces(dispatcher)
         return '\n{}\n'.format('-' * 50).join(pieces)
 
-    def _get_comment_description_pieces(self, handler):
-        for coroutine in handler.coroutines:
+    def _get_comment_description_pieces(self, dispatcher):
+        for coroutine in dispatcher.coroutines:
             description = self._strip_command_description(coroutine.__doc__)
             if description:
                 yield description
@@ -68,7 +68,7 @@ class Commands:
         command = self._get_command(message)
 
         if command and self._is_admin(message):
-            return self.root.handle(command, message)
+            return self.root.dispatch(command, message)
 
         return False
 

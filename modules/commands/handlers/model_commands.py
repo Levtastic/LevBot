@@ -2,7 +2,7 @@ from functools import partial
 from sqlite3 import IntegrityError
 from modules import database
 from modules.database import models
-from ..command_handler import CommandException
+from .. import CommandException
 
 
 class ModelCommands:

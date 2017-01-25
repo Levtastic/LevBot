@@ -4,11 +4,11 @@ from types import MappingProxyType
 from modules import database
 
 
-class CommandHandler:
+class CommandDispatcher:
     def __init__(self, bot, command):
         self._bot = bot
         self._command = command
-        self._sub_handlers = {}
+        self._child_dispatchers = {}
         self._coroutines = []
 
     @property
@@ -20,42 +20,42 @@ class CommandHandler:
         return list(self._coroutines)
 
     @property
-    def sub_handlers(self):
-        return MappingProxyType(self._sub_handlers)
+    def child_dispatchers(self):
+        return MappingProxyType(self._child_dispatchers)
 
     @property
     def is_leaf(self):
-        return not self._sub_handlers
+        return not self._child_dispatchers
 
-    def ensure_sub_handlers(self, commands):
+    def ensure_child_dispatchers(self, commands):
         command, sub_commands = (commands.split(' ', 1) + [''])[:2]
-        handler = self._ensure_sub_handler(command)
+        dispatcher = self._ensure_child_dispatcher(command)
 
         if sub_commands:
-            return handler.ensure_sub_handlers(sub_commands)
+            return dispatcher.ensure_child_dispatchers(sub_commands)
 
-        return handler
+        return dispatcher
 
-    def _ensure_sub_handler(self, command):
-        if command not in self._sub_handlers:
-            handler = self.__class__(self._bot, command)
-            self._sub_handlers[command] = handler
+    def _ensure_child_dispatcher(self, command):
+        if command not in self._child_dispatchers:
+            dispatcher = self.__class__(self._bot, command)
+            self._child_dispatchers[command] = dispatcher
 
-        return self._sub_handlers[command]
+        return self._child_dispatchers[command]
 
     def register_handler(self, coroutine, command=None):
         if not command:
             self._coroutines.append(coroutine)
             return self
 
-        return self.ensure_sub_handlers(command).register_handler(coroutine)
+        return self.ensure_child_dispatchers(command).register_handler(coroutine)
 
     def get(self, command_text):
         command, sub_commands = (command_text.split(' ', 1) + [''])[:2]
         command = self._get_command_from_alias(command)
 
         try:
-            return self._sub_handlers[command].get(sub_commands)
+            return self._child_dispatchers[command].get(sub_commands)
 
         except KeyError:
             return (self, command_text)
@@ -64,12 +64,12 @@ class CommandHandler:
         alias = database.get_CommandAlias_by_alias(command)
         return alias.command if alias else command
 
-    def handle(self, command, message):
-        handler, attributes = self.get(command)
-        for coroutine in handler.coroutines:
+    def dispatch(self, command, message):
+        dispatcher, attributes = self.get(command)
+        for coroutine in dispatcher.coroutines:
             asyncio.ensure_future(self._wrapper(coroutine, attributes, message))
 
-        return bool(handler.coroutines)
+        return bool(dispatcher.coroutines)
 
     async def _wrapper(self, coroutine, attributes, message):
         try:
