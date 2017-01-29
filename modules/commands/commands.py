@@ -81,7 +81,7 @@ class Commands:
     def handle_message(self, message):
         command = self._get_command(message)
 
-        if command and self._is_admin(message):
+        if command:
             return self.root.dispatch(command, message)
 
         return False
@@ -100,7 +100,3 @@ class Commands:
             return message.content
 
         return ''
-
-    def _is_admin(self, message):
-        level = UserLevel.get(message.author, message.channel)
-        return level >= UserLevel.global_bot_admin

@@ -3,6 +3,7 @@ import asyncio
 from types import MappingProxyType
 from collections import namedtuple
 from modules import database
+from modules import UserLevel
 
 
 Handler = namedtuple('Handler', ('coroutine', 'user_level'))
@@ -70,14 +71,18 @@ class CommandDispatcher:
 
     def dispatch(self, command, message):
         dispatcher, attributes = self.get(command)
-        for handler in dispatcher.handlers:
+
+        user_level = UserLevel.get(message.author, message.channel)
+        handlers = [h for h in dispatcher.handlers if h.user_level <= user_level]
+
+        for handler in handlers:
             asyncio.ensure_future(self._wrapper(
                 handler.coroutine,
                 attributes,
                 message
             ))
 
-        return bool(dispatcher.handlers)
+        return bool(handlers)
 
     async def _wrapper(self, coroutine, attributes, message):
         try:
