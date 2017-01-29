@@ -2,7 +2,7 @@ import settings
 
 from modules import database
 from modules import UserLevel
-from . import CommandDispatcher
+from . import CommandDispatcher, Handler
 from . import handlers
 
 
@@ -10,13 +10,27 @@ class Commands:
     def __init__(self, bot):
         self.bot = bot
         self.root = CommandDispatcher(bot, '__root__')
-        self.register_handler(self.cmd_help, 'help')
+
+        self.register_handler(
+            'help',
+            self.cmd_help,
+            user_level=UserLevel.user
+        )
 
         self._register_sub_handlers()
 
-    @property
-    def register_handler(self):
-        return self.root.register_handler
+    def register_handler(self, command, coroutine, **kwargs):
+        handler = self.build_handler(coroutine, **kwargs)
+        return self.root.register_handler(handler, command)
+
+    def build_handler(self, coroutine, **kwargs):
+        defaults = {
+            'user_level': UserLevel.server_bot_admin,
+        }
+
+        defaults.update(kwargs)
+
+        return Handler(coroutine, **defaults)
 
     def _register_sub_handlers(self):
         for sub_handler in dir(handlers):

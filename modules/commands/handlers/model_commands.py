@@ -1,6 +1,7 @@
 from functools import partial
 from sqlite3 import IntegrityError
 from modules import database
+from modules import UserLevel
 from modules.database import models
 from .. import CommandException
 
@@ -20,8 +21,9 @@ class ModelCommands:
     def register_model(self, commands, model):
         for command in ('add', 'edit', 'remove', 'list'):
             commands.register_handler(
+                '{} {}'.format(command, model),
                 self.get_partial(command, model),
-                '{} {}'.format(command, model)
+                user_level=UserLevel.global_bot_admin
             )
 
     def get_partial(self, command, model):

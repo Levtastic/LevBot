@@ -3,7 +3,6 @@ import asyncio
 from types import MappingProxyType
 from collections import namedtuple
 from modules import database
-from modules import UserLevel
 
 
 Handler = namedtuple('Handler', ('coroutine', 'user_level'))
@@ -48,15 +47,12 @@ class CommandDispatcher:
 
         return self._child_dispatchers[command]
 
-    def register_handler(self, coroutine, command=None, user_level=UserLevel.server_admin):
+    def register_handler(self, handler, command=None):
         if not command:
-            self._handlers.append(Handler(coroutine, user_level))
+            self._handlers.append(handler)
             return self
 
-        return self.ensure_child_dispatchers(command).register_handler(
-            coroutine=coroutine,
-            user_level=user_level
-        )
+        return self.ensure_child_dispatchers(command).register_handler(handler)
 
     def get(self, command_text):
         command, sub_commands = (command_text.split(' ', 1) + [''])[:2]

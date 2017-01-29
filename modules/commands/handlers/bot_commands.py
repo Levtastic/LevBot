@@ -1,7 +1,7 @@
 import discord
 
 from collections import defaultdict
-from modules import commands
+from modules import UserLevel
 
 
 class BotCommands:
@@ -10,8 +10,16 @@ class BotCommands:
         self.register(commands)
 
     def register(self, commands):
-        commands.register_handler(self.cmd_list_channels, 'list channels')
-        commands.register_handler(self.cmd_list_users, 'list users')
+        commands.register_handler(
+            'list channels',
+            self.cmd_list_channels,
+            user_level=UserLevel.global_bot_admin
+        )
+        commands.register_handler(
+            'list users',
+            self.cmd_list_users,
+            user_level=UserLevel.global_bot_admin
+        )
 
     async def cmd_list_channels(self, attributes, message):
         """Lists channels the bot can currently see
