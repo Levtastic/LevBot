@@ -29,6 +29,20 @@ class CommandDispatcher:
         return MappingProxyType(self._child_dispatchers)
 
     @property
+    def user_level(self):
+        levels = []
+
+        if self._handlers:
+            levels += [h.user_level for h in self._handlers]
+
+        if self._child_dispatchers:
+            levels += [c.user_level for c in self._child_dispatchers.values()]
+
+        levels = filter(None.__ne__, levels)
+
+        return min(levels) if levels else None
+
+    @property
     def is_leaf(self):
         return not self._child_dispatchers
 
