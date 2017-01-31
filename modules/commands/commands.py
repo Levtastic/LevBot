@@ -42,7 +42,8 @@ class Commands:
     async def cmd_help(self, attributes, message):
         """Offers help on other commands, and lists sub-commands"""
 
-        dispatcher, remainder = self.root.get(attributes)
+        user_level = UserLevel.get(message.author, message.channel)
+        dispatcher, remainder = self.root.get(attributes, user_level)
 
         if remainder:
             cmd = attributes[:-len(remainder)].strip()
@@ -51,12 +52,12 @@ class Commands:
 
         desc = self._get_command_description(dispatcher)
 
-        cmds = '\n'.join(
-            '{} {}'.format(cmd, key) for key in dispatcher.child_dispatchers
-        )
+        cmds = ''
+        for key, value in dispatcher.child_dispatchers.items():
+            if value.user_level <= user_level:
+                cmds += '{} {}\n'.format(cmd, key)
 
-        help_text = '.\n'
-        help_text += '`{}`\n\n'.format(cmd) if cmd else ''
+        help_text = '`{0}`\n\n'.format(cmd) if cmd else ''
         help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
 

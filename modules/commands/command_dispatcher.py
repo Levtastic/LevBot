@@ -69,24 +69,27 @@ class CommandDispatcher:
 
         return self.ensure_child_dispatchers(command).register_handler(handler)
 
-    def get(self, command_text):
+    def get(self, command_text, user_level):
         command, sub_commands = (command_text.split(' ', 1) + [''])[:2]
         command = self._get_command_from_alias(command)
 
         try:
-            return self._child_dispatchers[command].get(sub_commands)
+            dispatcher = self._child_dispatchers[command]
+            if dispatcher.user_level <= user_level:
+                return dispatcher.get(sub_commands, user_level)
 
         except KeyError:
-            return (self, command_text)
+            pass
+
+        return (self, command_text)
 
     def _get_command_from_alias(self, command):
         alias = database.get_CommandAlias_by_alias(command)
         return alias.command if alias else command
 
     def dispatch(self, command, message):
-        dispatcher, attributes = self.get(command)
-
         user_level = UserLevel.get(message.author, message.channel)
+        dispatcher, attributes = self.get(command, user_level)
         handlers = [h for h in dispatcher.handlers if h.user_level <= user_level]
 
         for handler in handlers:
