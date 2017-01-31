@@ -79,11 +79,11 @@ class Model(object):
         raise NotImplementedError('Child model must override define_fields()')
 
     def _build_table_if_necessary(self):
-        if not self.__class__._table_exists:
+        if not __class__._table_exists:
             if not self.has_table():
                 self.build_table()
 
-            self.__class__._table_exists = True
+            __class__._table_exists = True
 
     def has_table(self):
         query = """
