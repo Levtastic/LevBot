@@ -1,5 +1,6 @@
 import discord
 from modules import database
+from modules import UserLevel
 from .. import CommandException
 
 
@@ -9,10 +10,26 @@ class AlertCommands:
         self.register(commands)
 
     def register(self, commands):
-        commands.register_handler('add alert', self.cmd_add_alert)
-        commands.register_handler('edit alert', self.cmd_edit_alert)
-        commands.register_handler('remove alert', self.cmd_remove_alert)
-        commands.register_handler('list alerts', self.cmd_list_alerts)
+        commands.register_handler(
+            'add alert',
+            self.cmd_add_alert,
+            user_level=UserLevel.user
+        )
+        commands.register_handler(
+            'edit alert',
+            self.cmd_edit_alert,
+            user_level=UserLevel.user
+        )
+        commands.register_handler(
+            'remove alert',
+            self.cmd_remove_alert,
+            user_level=UserLevel.user
+        )
+        commands.register_handler(
+            'list alerts',
+            self.cmd_list_alerts,
+            user_level=UserLevel.user
+        )
 
     async def cmd_add_alert(self, attributes, message):
         """Adds streamer alerts to channels
