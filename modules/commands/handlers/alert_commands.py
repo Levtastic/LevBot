@@ -6,6 +6,8 @@ from .. import CommandException
 
 class AlertCommands:
     def __init__(self, commands):
+        self.server_user_level = UserLevel.server_bot_admin
+
         self.bot = commands.bot
         self.register(commands)
 
@@ -53,6 +55,9 @@ class AlertCommands:
         streamer = self.ensure_streamer(username)
 
         channel = self.get_channel(channel_name, message)
+
+        if not self.check_permission(message, channel):
+            return
 
         streamer_channel = self.build_streamer_channel(
             username,
@@ -104,6 +109,50 @@ class AlertCommands:
 
         return channel
 
+    def check_permission(self, message, channel=None):
+        if not channel:
+            channel = message.channel
+
+        if channel.is_private:
+            return self.check_private_destination_permission(message, channel)
+
+        if message.channel.is_private:
+            return self.check_private_source_permission(message, channel)
+
+        return self.check_public_source_permission(message, channel)
+
+    def check_private_destination_permission(self, message, channel):
+        # private destinations can ONLY be set from the same private channel
+
+        return channel == message.channel
+
+    def check_private_source_permission(self, message, channel):
+        # you can register alerts from PMs for channels you have access in
+
+        member = channel.server.get_member(message.author.id)
+        if not member:
+            return False
+
+        user_level = UserLevel.get(member, channel)
+
+        return user_level >= self.server_user_level
+
+    def check_public_source_permission(self, message, channel):
+        # public->public requires access in both channels
+
+        source_member = message.channel.server.get_member(message.author.id)
+        destination_member = channel.server.get_member(message.author.id)
+
+        if not (source_member and destination_member):
+            return False
+
+        user_level = min(
+            UserLevel.get(source_member, message.channel),
+            UserLevel.get(destination_member, channel)
+        )
+
+        return user_level >= self.server_user_level
+
     def build_streamer_channel(self, username, streamer, channel, template):
         if self.streamer_channel_exists(streamer, channel):
             raise CommandException(
@@ -134,6 +183,9 @@ class AlertCommands:
         """Editing alerts is not currently supported.
         Please use `remove alert` and then `add alert` instead"""
 
+        if not self.check_permission(message):
+            return
+
         raise CommandException(
             'Editing alerts is not currently supported.'
             ' Please use `remove alert` and then `add alert` instead'
@@ -149,6 +201,9 @@ class AlertCommands:
         streamer = self.get_streamer(username)
 
         channel = self.get_channel(channel_name, message)
+
+        if not self.check_permission(message, channel):
+            return
 
         streamer_channel = self.get_streamer_channel(username, streamer, channel)
 
@@ -203,6 +258,9 @@ class AlertCommands:
 
         Syntax: `list alerts`
         or `list alerts <streamer_username>`"""
+
+        if not self.check_permission(message):
+            return
 
         username_filter = attributes.lower()
 
