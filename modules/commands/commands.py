@@ -61,7 +61,7 @@ class Commands:
         help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
 
-        await self.bot.send_message(message.channel, help_text)
+        await self.bot.send_message(message.author, help_text)
 
     def _get_command_description(self, dispatcher):
         pieces = self._get_comment_description_pieces(dispatcher)
