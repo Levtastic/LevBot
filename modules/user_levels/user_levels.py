@@ -60,7 +60,7 @@ class UserLevel(OrderedEnum):
             if member == member.server.owner:
                 return cls.server_owner
 
-            if channel.permissions_for(member).manage_messages:
+            if channel.permissions_for(member).manage_channels:
                 return cls.server_admin
 
             if db_user and db_user.is_admin(channel.server):
