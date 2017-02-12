@@ -76,7 +76,7 @@ class AlertCommands:
 
     def get_add_attributes(self, attributes):
         try:
-            username, channel_name, template = (attributes.split(' ', 2) + [''])[:3]
+            username, channel_name, template = (attributes.split(' ', 2) + ['']*2)[:3]
             return username, channel_name, template
 
         except ValueError:
@@ -95,7 +95,7 @@ class AlertCommands:
         return streamer
 
     def get_channel(self, name, message):
-        if name.lower() == 'here':
+        if name.lower() in ('', 'here'):
             return message.channel
 
         channel = self.bot.get_channel(name) or discord.utils.get(
@@ -222,7 +222,7 @@ class AlertCommands:
 
     def get_remove_attributes(self, attributes):
         try:
-            username, channel_name = attributes.split(' ', 1)
+            username, channel_name = (attributes.split(' ', 1) + [''])[:2]
             return username, channel_name
 
         except ValueError:
@@ -262,29 +262,47 @@ class AlertCommands:
         if not self.check_permission(message):
             return
 
-        username_filter = attributes.lower()
-
-        streamers = list(filter(
-            lambda streamer: username_filter in streamer.username.lower(),
+        alerts = list(self.get_streamer_channels(
+            message,
+            attributes.lower(),
             database.get_Streamer_list()
         ))
 
         await self.bot.send_message(
             message.channel,
-            self.get_alerts_text(streamers)
+            self.get_alerts_text(alerts)
         )
 
-    def get_alerts_text(self, streamers):
-        if not streamers:
+    def get_streamer_channels(self, message, username_filter, streamers):
+        for streamer in streamers:
+            if username_filter not in streamer.username.lower():
+                continue
+
+            yield from self.get_streamer_channels_by_streamer(message, streamer)
+
+    def get_streamer_channels_by_streamer(self, message, streamer):
+        for streamer_channel in streamer.streamer_channels:
+            channel = streamer_channel.channel
+
+            if channel.is_private:
+                if channel == message.channel:
+                    yield streamer_channel
+                else:
+                    continue
+
+            user_level = UserLevel.get(message.author, channel)
+            if user_level >= self.server_user_level:
+                yield streamer_channel
+
+    def get_alerts_text(self, streamer_channels):
+        if not streamer_channels:
             return 'No `alerts` found'
 
-        return '.\n{}'.format('\n'.join(self.get_alerts_text_pieces(streamers)))
+        alertfmt = (
+            '`{0.streamer.username}` `({0.streamer.id})`'
+            ' `{0.channel.server.name}#{0.channel.name}` `({0.id})`'
+        )
 
-    def get_alerts_text_pieces(self, streamers):
-        channelfmt = '`{0.server.name}#{0.channel.name}` `({0.id})`'
-
-        for streamer in streamers:
-            yield '`{0.username}` `({0.id})`: {1}'.format(
-                streamer,
-                ', '.join(channelfmt.format(sc) for sc in streamer.streamer_channels)
-            )
+        return '.\n{}'.format('\n'.join(
+            alertfmt.format(channel) for channel in streamer_channels
+        ))
