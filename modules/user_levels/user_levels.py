@@ -46,11 +46,11 @@ class UserLevel(OrderedEnum):
     blacklisted      = -1
 
     @classmethod
-    def get(cls, member, channel=None):
-        if str(member) in settings.owner_usernames:
+    def get(cls, user, channel=None):
+        if str(user) in settings.owner_usernames:
             return cls.bot_owner
 
-        db_user = database.get_User_by_user_did(member.id)
+        db_user = database.get_User_by_user_did(user.id)
 
         if db_user and db_user.blacklisted:
             return cls.blacklisted
@@ -59,25 +59,30 @@ class UserLevel(OrderedEnum):
             return cls.global_bot_admin
 
         if channel and channel.is_private:
-            return cls._get_private_level(member, channel)
+            return cls._get_private_level(user, channel)
 
-        if channel and isinstance(member, discord.Member):
-            return cls._get_server_level(member, channel, db_user)
+        if channel:
+            return cls._get_server_level(user, channel, db_user)
 
         return cls.user
 
     @classmethod
-    def _get_private_level(cls, member, channel):
-        if member not in channel.recipients:
+    def _get_private_level(cls, user, channel):
+        if user not in channel.recipients:
             return cls.no_access
 
-        if channel.type == ChannelType.group and member != channel.owner:
+        if channel.type == ChannelType.group and user != channel.owner:
             return cls.user
 
         return cls.server_admin
 
     @classmethod
-    def _get_server_level(cls, member, channel, db_user):
+    def _get_server_level(cls, user, channel, db_user):
+        member = channel.server.get_member(user.id)
+
+        if not member:
+            return cls.no_access
+
         if member == channel.server.owner:
             return cls.server_owner
 
@@ -87,7 +92,4 @@ class UserLevel(OrderedEnum):
         if db_user and db_user.is_admin(channel.server):
             return cls.server_bot_admin
 
-        if member in channel.server.members:
-            return cls.server_user
-
-        return cls.user
+        return cls.server_user
