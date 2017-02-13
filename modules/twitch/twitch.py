@@ -118,9 +118,10 @@ class Twitch:
 
 
 class Api:
-    def __init__(self, client_id, timeout_delay=1):
+    def __init__(self, client_id, batch_size=100, timeout_delay=1):
         self.headers = {'Client-ID': client_id}
         self.timeout_delay = timeout_delay
+        self.batch_size = batch_size
 
         self.urlfmt = (
             'https://api.twitch.tv/kraken/streams'
@@ -132,6 +133,17 @@ class Api:
         self.last_timeout = time.perf_counter() - timeout_delay
 
     async def get_data(self, usernames):
+        data = {}
+        for i in range(0, len(usernames), self.batch_size):
+            usernames_batch = usernames[i:i+self.batch_size]
+            data.update(await self.get_data_batch(usernames_batch))
+
+        return data
+
+    async def get_data_batch(self, usernames):
+        if not usernames:
+            return {}
+
         url = self.urlfmt.format(','.join(usernames))
         response = await self.do_query(url)
 
