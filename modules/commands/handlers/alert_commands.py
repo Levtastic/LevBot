@@ -76,14 +76,12 @@ class AlertCommands:
             template
         )
 
-        fmt = ('Alert added for `{0.username}` `({0.id})`'
-               ' in `{2}` `({1.id})`')
+        fmt = 'Alert added for `{0.username}` in `{1}`'
 
         return await self.bot.send_message(
             message.channel,
             fmt.format(
                 streamer,
-                streamer_channel,
                 self.get_channel_name(channel)
             )
         )
@@ -288,10 +286,7 @@ class AlertCommands:
         if not streamer_channels:
             return 'No `alerts` found'
 
-        alertfmt = (
-            '`{0.streamer.username}` `({0.streamer.id})`'
-            ' `{1}` `({0.id})`'
-        )
+        alertfmt = '`{0.streamer.username}` in `{1}`'
 
         return '.\n{}'.format('\n'.join(
             alertfmt.format(channel, self.get_channel_name(channel.channel)) for channel in streamer_channels
