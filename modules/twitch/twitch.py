@@ -5,6 +5,7 @@ import discord
 import aiohttp
 import settings
 
+from string import Template
 from collections import defaultdict
 from concurrent.futures import CancelledError
 from modules import database
@@ -69,14 +70,24 @@ class Twitch:
         self.counter.reset(streamer.username)
 
         for streamer_channel in streamer.streamer_channels:
-            fmt = streamer_channel.template or (
-                '@here {0[channel][display_name]} is now live playing {0[channel][game]}:\n'
-                '{0[channel][status]}\n'
-                '{0[channel][url]}'
+            template = streamer_channel.template or (
+                '@here ${channel_name} is now live playing ${game}:\n'
+                '${title}\n'
+                '${url}'
             )
 
-            text = fmt.format(twitch_data)
+            text = self.apply_template(template, twitch_data)
             await self.send_or_update_message(streamer_channel, text)
+
+    def apply_template(self, template, twitch_data):
+        return Template(template).safe_substitute(
+            channel_name=twitch_data['channel']['display_name'],
+            game=twitch_data['channel']['game'],
+            title=twitch_data['channel']['status'],
+            url=twitch_data['channel']['url'],
+            viewers=twitch_data['viewers'],
+            followers=twitch_data['channel']['followers']
+        )
 
     async def send_or_update_message(self, streamer_channel, text):
         if not streamer_channel.streamer_messages:
