@@ -66,22 +66,29 @@ class AlertCommands:
         )
 
         fmt = ('Alert added for `{0.username}` `({0.id})`'
-               ' in `{1.server.name}#{1.channel.name}` `({1.id})`')
+               ' in `{3}` `({1.id})`')
 
         return await self.bot.send_message(
             message.channel,
-            fmt.format(streamer, streamer_channel)
+            fmt.format(
+                streamer,
+                streamer_channel,
+                self.get_channel_name(channel)
+            )
         )
 
     def get_add_attributes(self, attributes):
         try:
-            username, channel_name, template = (attributes.split(' ', 2) + ['']*2)[:3]
-            return username, channel_name, template
+            username, channel_name, template = (attributes.split(' ', 2) + (['']*2))[:3]
+            if username:
+                return username, channel_name, template
 
         except ValueError:
-            raise CommandException(
-                'Syntax: `add alert <username> <channel name/id or "here"> <template>`'
-            )
+            pass
+
+        raise CommandException(
+            'Syntax: `add alert <username> <channel name/id or "here"> <template>`'
+        )
 
     def ensure_streamer(self, username):
         streamer = database.get_Streamer_by_username(username.lower())
@@ -128,10 +135,9 @@ class AlertCommands:
     def build_streamer_channel(self, username, streamer, channel, template):
         if self.streamer_channel_exists(streamer, channel):
             raise CommandException(
-                'An alert for `{}` in `{}#{}` already exists'.format(
+                'An alert for `{}` in `` already exists'.format(
                     username,
-                    channel.server.name,
-                    channel.name
+                    self.get_channel_name(channel)
                 )
             )
 
@@ -142,6 +148,12 @@ class AlertCommands:
         streamer_channel.save()
 
         return streamer_channel
+
+    def get_channel_name(self, channel):
+        if channel.is_private:
+            return 'Private ({})'.format(', '.join(r.name for r in (channel.recipients)))
+
+        return '{}#{}'.format(channel.server.name, channel.name)
 
     def streamer_channel_exists(self, streamer, channel):
         streamer_channels = database.get_StreamerChannel().get_list_by(
@@ -179,9 +191,9 @@ class AlertCommands:
 
         await self.bot.send_message(
             message.channel,
-            'Alert for `{}` in `#{}` deleted'.format(
+            'Alert for `{}` in `{}` deleted'.format(
                 streamer.username,
-                channel.name
+                self.get_channel_name(channel)
             )
         )
 
@@ -191,12 +203,15 @@ class AlertCommands:
     def get_remove_attributes(self, attributes):
         try:
             username, channel_name = (attributes.split(' ', 1) + [''])[:2]
-            return username, channel_name
+            if username:
+                return username, channel_name
 
         except ValueError:
-            raise CommandException(
-                'Syntax: `remove alert <username> <channel name/id or "here">`'
-            )
+            pass
+
+        raise CommandException(
+            'Syntax: `remove alert <username> <channel name/id or "here">`'
+        )
 
     def get_streamer(self, username):
         streamer = database.get_Streamer_by_username(username.lower())
@@ -213,9 +228,9 @@ class AlertCommands:
 
         if not streamer_channel:
             raise CommandException(
-                'Alert for `{}` in `#{}` not found'.format(
+                'Alert for `{}` in `{}` not found'.format(
                     username,
-                    channel.name
+                    self.get_channel_name(channel)
                 )
             )
 
@@ -258,9 +273,9 @@ class AlertCommands:
 
         alertfmt = (
             '`{0.streamer.username}` `({0.streamer.id})`'
-            ' `{0.channel.server.name}#{0.channel.name}` `({0.id})`'
+            ' `{1}` `({0.id})`'
         )
 
         return '.\n{}'.format('\n'.join(
-            alertfmt.format(channel) for channel in streamer_channels
+            alertfmt.format(channel, self.get_channel_name(channel.channel)) for channel in streamer_channels
         ))

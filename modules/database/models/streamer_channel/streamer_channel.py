@@ -19,10 +19,11 @@ class StreamerChannel(Model):
 
     @cached_slot_property('_server')
     def server(self):
-        if self.channel:
+        try:
             return self.channel.server
 
-        return None
+        except AttributeError:
+            return None
 
     @cached_slot_property('_streamer_messages')
     def streamer_messages(self):
