@@ -23,7 +23,8 @@ class ModelCommands:
             commands.register_handler(
                 '{} {}'.format(command, model),
                 self.get_partial(command, model),
-                user_level=UserLevel.global_bot_admin
+                user_level=UserLevel.global_bot_admin,
+                description=self.get_description(command, model)
             )
 
     def get_partial(self, command, model):
@@ -33,18 +34,51 @@ class ModelCommands:
         partial_func.__doc__ = native_func.__doc__
         return partial_func
 
-    async def cmd_add(self, model_name, attributes, message):
-        """Adds a model to the database manually
+    def get_description(self, command, model_name):
+        fmt = 'Manually {} a {} model {} the database'
 
-        The syntax of this command is determined at runtime
-        To see it, run the command without any parameters"""
+        if command == 'add':
+            message = fmt.format('adds', model_name, 'to')
+
+        elif command == 'edit':
+            message = fmt.format('edits', model_name, 'in')
+
+        elif command == 'remove':
+            message = fmt.format('removes', model_name, 'from')
+
+        elif command == 'list':
+            message = 'Lists all {} models in the database'.format(model_name)
+
+        else:
+            message = ''
 
         model = self.get_model(model_name)
+        message += '\n\n' + self.get_syntax(command, model_name, model)
 
-        syntax_message = 'Syntax: `add {} {}`'.format(
-            model_name,
-            ', '.join('{} = <value>'.format(field) for field in model.fields)
-        )
+        return message
+
+    def get_model(self, model_name):
+        factory_name = 'get_{}'.format(model_name)
+        factory = getattr(database, factory_name)
+        return factory()
+
+    def get_syntax(self, command, model_name, model):
+        fields = ''
+        if command == 'edit':
+            fields = '<search_key> = <search_value> '
+
+        if command in ('remove', 'list'):
+            fields += '<key> = <value>'
+
+        else:
+            fields += ', '.join('{} = <value>'.format(field) for field in model.fields)
+
+        return 'Syntax: `{} {} {}`'.format(command, model_name, fields)
+
+    async def cmd_add(self, model_name, attributes, message):
+        model = self.get_model(model_name)
+
+        syntax_message = self.get_syntax('add', model_name, model)
 
         try:
             pairs = list(self.get_attribute_pairs(attributes, model))
@@ -73,11 +107,6 @@ class ModelCommands:
             )
         )
 
-    def get_model(self, model_name):
-        factory_name = 'get_{}'.format(model_name)
-        factory = getattr(database, factory_name)
-        return factory()
-
     def get_attribute_pairs(self, attributes, model, count_override=None):
         count = (count_override or len(model.fields)) - 1
 
@@ -95,17 +124,9 @@ class ModelCommands:
             setattr(model, field, value)
 
     async def cmd_edit(self, model_name, attributes, message):
-        """Edits a model in the database manually
-
-        The syntax of this command is determined at runtime
-        To see it, run the command without any parameters"""
-
         model = self.get_model(model_name)
 
-        syntax_message = 'Syntax: `edit {} <search_key> = <search_value>, {}`'.format(
-            model_name,
-            ', '.join('{} = <value>'.format(field) for field in model.fields.keys())
-        )
+        syntax_message = self.get_syntax('edit', model_name, model)
 
         try:
             print(repr(attributes))
@@ -155,14 +176,9 @@ class ModelCommands:
         return models[0]
 
     async def cmd_remove(self, model_name, attributes, message):
-        """Removes a model from the database manually
-
-        The syntax of this command is determined at runtime
-        To see it, run the command without any parameters"""
-
         model = self.get_model(model_name)
 
-        syntax_message = 'Syntax: `remove {} <key> = <value>`'.format(model_name)
+        syntax_message = self.get_syntax('remove', model_name, model)
 
         try:
             pairs = list(self.get_attribute_pairs(attributes, model))
@@ -183,11 +199,6 @@ class ModelCommands:
         )
 
     async def cmd_list(self, model_name, attributes, message):
-        """Lists models in the database
-
-        The syntax of this command is determined at runtime
-        To see it, run the command without any parameters"""
-
         model = self.get_model(model_name)
 
         if attributes:
@@ -195,9 +206,7 @@ class ModelCommands:
                 pairs = list(self.get_attribute_pairs(attributes, model))
 
             except ValueError:
-                raise CommandException(
-                    'Syntax: `list {} <key> = <value>`'.format(model_name)
-                )
+                raise CommandException(self.get_syntax(add, model_name, model))
 
         else:
             pairs = []

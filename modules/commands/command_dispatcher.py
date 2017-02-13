@@ -6,7 +6,7 @@ from modules import database
 from modules import UserLevel
 
 
-Handler = namedtuple('Handler', ('coroutine', 'user_level'))
+Handler = namedtuple('Handler', ('coroutine', 'user_level', 'description'))
 
 
 class CommandDispatcher:

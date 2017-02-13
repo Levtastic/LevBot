@@ -15,41 +15,48 @@ class AlertCommands:
         commands.register_handler(
             'add alert',
             self.cmd_add_alert,
-            user_level=self.user_level
+            user_level=self.user_level,
+            description=self.cmd_add_alert_desc
         )
         commands.register_handler(
             'edit alert',
             self.cmd_edit_alert,
-            user_level=self.user_level
+            user_level=self.user_level,
+            description=self.cmd_edit_alert_desc
         )
         commands.register_handler(
             'remove alert',
             self.cmd_remove_alert,
-            user_level=self.user_level
+            user_level=self.user_level,
+            description=self.cmd_remove_alert_desc
         )
         commands.register_handler(
             'list alerts',
             self.cmd_list_alerts,
-            user_level=self.user_level
+            user_level=self.user_level,
+            description=self.cmd_list_alerts_desc
         )
 
+    cmd_add_alert_desc = (
+        'Adds streamer alerts to channels\n'
+        '\n'
+        'Syntax: `add alert <username> <channel name/id or "here"> <template>`\n'
+        '\n'
+        '`<template>` is optional and allows an alert to have a custom message when'
+        'someone starts streaming. It is a format string that stream data is passed'
+        'through before being sent to the channel.\n'
+        '\n'
+        'The default template is\n'
+        '```@here {0[channel][display_name]} is now live playing {0[channel][game]}:\n'
+        '{0[channel][status]}\n'
+        '{0[channel][url]}```\n'
+        '\n'
+        'You can see a list of available information about a stream in the'
+        ' Example Responses here:\n'
+        'https://github.com/justintv/Twitch-API/blob/master/v3_resources/streams.md#get-streams)'
+    )
+
     async def cmd_add_alert(self, attributes, message):
-        """Adds streamer alerts to channels
-
-        Syntax: `add alert <username> <channel name/id or "here"> <template>`
-
-        `<template>` is optional and allows an alert to have a custom message when
-        someone starts streaming. It is a format string that stream data is passed
-        through before being sent to the channel.
-
-        The default template is
-        ```@here {0[channel][display_name]} is now live playing {0[channel][game]}:
-        {0[channel][status]}
-        {0[channel][url]}```
-
-        You can see a list of available information about a stream in the Example Responses here:
-        https://github.com/justintv/Twitch-API/blob/master/v3_resources/streams.md#get-streams"""
-
         username, channel_name, template = self.get_add_attributes(attributes)
 
         streamer = self.ensure_streamer(username)
@@ -163,20 +170,24 @@ class AlertCommands:
 
         return bool(streamer_channels)
 
-    async def cmd_edit_alert(self, attributes, message):
-        """Editing alerts is not currently supported.
-        Please use `remove alert` and then `add alert` instead"""
+    cmd_edit_alert_desc = (
+        'Editing alerts is not currently supported.\n'
+        'Please use `remove alert` and then `add alert` instead'
+    )
 
+    async def cmd_edit_alert(self, attributes, message):
         raise CommandException(
             'Editing alerts is not currently supported.'
             ' Please use `remove alert` and then `add alert` instead'
         )
 
+    cmd_remove_alert_desc = (
+        'Removes streamer alerts from channels\n'
+        '\n'
+        'Syntax: `remove alert <username> <channel name/id or "here">`'
+    )
+
     async def cmd_remove_alert(self, attributes, message):
-        """Removes streamer alerts from channels
-
-        Syntax: `remove alert <username> <channel name/id or "here">`"""
-
         username, channel_name = self.get_remove_attributes(attributes)
 
         streamer = self.get_streamer(username)
@@ -236,12 +247,14 @@ class AlertCommands:
 
         return streamer_channel
 
+    cmd_list_alerts_desc = (
+        'Lists all streamer alerts currently registered\n'
+        '\n'
+        'Syntax: `list alerts`\n'
+        'or `list alerts <streamer_username>`'
+    )
+
     async def cmd_list_alerts(self, attributes, message):
-        """Lists all streamer alerts currently registered
-
-        Syntax: `list alerts`
-        or `list alerts <streamer_username>`"""
-
         alerts = list(self.get_streamer_channels(
             message,
             attributes.lower(),

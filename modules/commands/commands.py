@@ -14,7 +14,8 @@ class Commands:
         self.register_handler(
             'help',
             self.cmd_help,
-            user_level=UserLevel.user
+            user_level=UserLevel.user,
+            description='Offers help on other commands, and lists sub-commands'
         )
 
         self._register_sub_handlers()
@@ -26,6 +27,7 @@ class Commands:
     def build_handler(self, coroutine, **kwargs):
         defaults = {
             'user_level': UserLevel.server_bot_admin,
+            'description': '',
         }
 
         defaults.update(kwargs)
@@ -40,8 +42,6 @@ class Commands:
             getattr(handlers, sub_handler)(self)
 
     async def cmd_help(self, attributes, message):
-        """Offers help on other commands, and lists sub-commands"""
-
         user_level = UserLevel.get(message.author, message.channel)
         dispatcher, remainder = self.root.get(attributes, user_level)
 
@@ -69,15 +69,8 @@ class Commands:
 
     def _get_comment_description_pieces(self, dispatcher):
         for handler in dispatcher.handlers:
-            description = self._strip_command_description(handler.coroutine.__doc__)
-            if description:
-                yield description
-
-    def _strip_command_description(self, description):
-        if not description:
-            return description
-
-        return '\n'.join(line.strip() for line in description.split('\n'))
+            if handler.description:
+                yield handler.description
 
     def handle_message(self, message):
         command = self._get_command(message)
