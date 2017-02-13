@@ -20,6 +20,11 @@ class BotCommands:
             self.cmd_list_users,
             user_level=UserLevel.global_bot_admin
         )
+        commands.register_handler(
+            'invite',
+            self.cmd_invite,
+            user_level=UserLevel.user
+        )
 
     async def cmd_list_channels(self, attributes, message):
         """Lists channels the bot can currently see
@@ -110,3 +115,11 @@ class BotCommands:
                     member_text += ' `BOT`'
 
                 yield member_text
+
+    async def cmd_invite(self, attributes, message):
+        await self.bot.send_message(
+            message.author,
+            'Use this invite link to add me to your server: {}'.format(
+                discord.utils.oauth_url(self.bot.user.id)
+            )
+        )
