@@ -77,7 +77,7 @@ class AlertCommands:
         )
 
         fmt = ('Alert added for `{0.username}` `({0.id})`'
-               ' in `{3}` `({1.id})`')
+               ' in `{2}` `({1.id})`')
 
         return await self.bot.send_message(
             message.channel,
