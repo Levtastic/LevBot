@@ -10,7 +10,7 @@ CREATE TABLE
 CREATE INDEX
     user_servers_user_id
 ON
-    streamer_channels
+    user_servers
     (
         user_id
     );
