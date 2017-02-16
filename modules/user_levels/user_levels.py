@@ -35,15 +35,16 @@ class OrderedEnum(Enum):
 
 
 class UserLevel(OrderedEnum):
-    bot_owner        = 7
-    global_bot_admin = 6
-    server_owner     = 5
-    server_admin     = 4
-    server_bot_admin = 3
-    server_user      = 2
-    user             = 1
-    no_access        = 0
-    blacklisted      = -1
+    bot_owner          = 8
+    global_bot_admin   = 7
+    server_owner       = 6
+    server_admin       = 5
+    server_bot_admin   = 4
+    server_user        = 3
+    server_blacklisted = 2
+    user               = 1
+    no_access          = 0
+    blacklisted        = -1
 
     @classmethod
     def get(cls, user, channel=None):
@@ -85,6 +86,9 @@ class UserLevel(OrderedEnum):
 
         if member == channel.server.owner:
             return cls.server_owner
+
+        if db_user and db_user.is_blacklisted(channel.server):
+            return cls.server_blacklisted
 
         if channel.permissions_for(member).manage_channels:
             return cls.server_admin

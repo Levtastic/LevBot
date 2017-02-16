@@ -25,4 +25,5 @@ class UserServer(Model):
             'user_id': None,
             'server_did': None,
             'admin': False,
+            'blacklisted': False,
         }

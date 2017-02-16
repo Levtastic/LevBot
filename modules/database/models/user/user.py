@@ -36,6 +36,13 @@ class User(Model):
 
         return False
 
+    def is_blacklisted(self, server):
+        for user_server in self.user_servers:
+            if user_server.server == server:
+                return user_server.blacklisted
+
+        return False
+
     def get_user_level(self, channel=None):
         if channel:
             member = channel.server.get_member(self.user_did)
