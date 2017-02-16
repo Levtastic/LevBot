@@ -19,12 +19,6 @@ class AlertCommands:
             description=self.cmd_add_alert_desc
         )
         commands.register_handler(
-            'edit alert',
-            self.cmd_edit_alert,
-            user_level=self.user_level,
-            description=self.cmd_edit_alert_desc
-        )
-        commands.register_handler(
             'remove alert',
             self.cmd_remove_alert,
             user_level=self.user_level,
@@ -171,17 +165,6 @@ class AlertCommands:
         )
 
         return bool(streamer_channels)
-
-    cmd_edit_alert_desc = (
-        'Editing alerts is not currently supported.\n'
-        'Please use `remove alert` and then `add alert` instead'
-    )
-
-    async def cmd_edit_alert(self, attributes, message):
-        raise CommandException(
-            'Editing alerts is not currently supported.'
-            ' Please use `remove alert` and then `add alert` instead'
-        )
 
     cmd_remove_alert_desc = (
         'Removes streamer alerts from channels\n'
