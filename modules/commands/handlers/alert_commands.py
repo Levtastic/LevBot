@@ -16,43 +16,52 @@ class AlertCommands:
             'add alert',
             self.cmd_add_alert,
             user_level=self.user_level,
-            description=self.cmd_add_alert_desc
+            description=(
+                'Adds streamer alerts to channels\n'
+                '\n'
+                'Syntax:'
+                ' `add alert <username> <channel name/id or "here"> <template>`\n'
+                '\n'
+                '`<template>` is optional and allows an alert to have a custom'
+                ' message when someone starts streaming. It is a format string'
+                ' that stream data is passed through before being sent to the'
+                ' channel.\n'
+                '\n'
+                'The default template is\n'
+                '```@here ${channel_name} is now live playing ${game}:\n'
+                '${title}\n'
+                '${url}```'
+                '\n'
+                'Possible information you can include in your own templates is:\n'
+                '    `${channel_name}`\n'
+                '    `${game}`\n'
+                '    `${title}`\n'
+                '    `${url}`\n'
+                '    `${viewers}`\n'
+                '    `${followers}`'
+            )
         )
         commands.register_handler(
             'remove alert',
             self.cmd_remove_alert,
             user_level=self.user_level,
-            description=self.cmd_remove_alert_desc
+            description=(
+                'Removes streamer alerts from channels\n'
+                '\n'
+                'Syntax: `remove alert <username> <channel name/id or "here">`'
+            )
         )
         commands.register_handler(
             'list alerts',
             self.cmd_list_alerts,
             user_level=self.user_level,
-            description=self.cmd_list_alerts_desc
+            description=(
+                'Lists all streamer alerts currently registered\n'
+                '\n'
+                'Syntax: `list alerts`\n'
+                'or `list alerts <streamer_username>`'
+            )
         )
-
-    cmd_add_alert_desc = (
-        'Adds streamer alerts to channels\n'
-        '\n'
-        'Syntax: `add alert <username> <channel name/id or "here"> <template>`\n'
-        '\n'
-        '`<template>` is optional and allows an alert to have a custom message when'
-        ' someone starts streaming. It is a format string that stream data is passed'
-        ' through before being sent to the channel.\n'
-        '\n'
-        'The default template is\n'
-        '```@here ${channel_name} is now live playing ${game}:\n'
-        '${title}\n'
-        '${url}```'
-        '\n'
-        'Possible information you can include in your own templates is:\n'
-        '    `${channel_name}`\n'
-        '    `${game}`\n'
-        '    `${title}`\n'
-        '    `${url}`\n'
-        '    `${viewers}`\n'
-        '    `${followers}`'
-    )
 
     async def cmd_add_alert(self, attributes, message):
         username, channel_name, template = self.get_add_attributes(attributes)
@@ -166,12 +175,6 @@ class AlertCommands:
 
         return bool(streamer_channels)
 
-    cmd_remove_alert_desc = (
-        'Removes streamer alerts from channels\n'
-        '\n'
-        'Syntax: `remove alert <username> <channel name/id or "here">`'
-    )
-
     async def cmd_remove_alert(self, attributes, message):
         username, channel_name = self.get_remove_attributes(attributes)
 
@@ -231,13 +234,6 @@ class AlertCommands:
             )
 
         return streamer_channel
-
-    cmd_list_alerts_desc = (
-        'Lists all streamer alerts currently registered\n'
-        '\n'
-        'Syntax: `list alerts`\n'
-        'or `list alerts <streamer_username>`'
-    )
 
     async def cmd_list_alerts(self, attributes, message):
         alerts = list(self.get_streamer_channels(

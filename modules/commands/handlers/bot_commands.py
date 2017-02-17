@@ -14,27 +14,33 @@ class BotCommands:
             'list channels',
             self.cmd_list_channels,
             user_level=UserLevel.global_bot_admin,
-            description=self.cmd_list_channels_desc
+            description=(
+                'Lists channels the bot can currently see\n'
+                '\n'
+                'Syntax: `list channels`\n'
+                'or `list channels <name>`'
+            )
         )
         commands.register_handler(
             'list users',
             self.cmd_list_users,
             user_level=UserLevel.global_bot_admin,
-            description=self.cmd_list_users_desc
+            description=(
+                'Lists users the bot can currently see\n'
+                '\n'
+                'Syntax: `list users`\n'
+                'or `list users <name>`'
+            )
         )
         commands.register_handler(
             'invite',
             self.cmd_invite,
             user_level=UserLevel.user,
-            description=self.cmd_invite_desc
+            description=(
+                'Sends a link in private that can be used to invite the'
+                ' bot to your server'
+            )
         )
-
-    cmd_list_channels_desc = (
-        'Lists channels the bot can currently see\n'
-        '\n'
-        'Syntax: `list channels`\n'
-        'or `list channels <name>`'
-    )
 
     async def cmd_list_channels(self, attributes, message):
         channels = defaultdict(list)
@@ -76,13 +82,6 @@ class BotCommands:
 
                 yield channel_text
 
-    cmd_list_users_desc = (
-        'Lists users the bot can currently see\n'
-        '\n'
-        'Syntax: `list users`\n'
-        'or `list users <name>`'
-    )
-
     async def cmd_list_users(self, attributes, message):
         members = defaultdict(list)
 
@@ -122,10 +121,6 @@ class BotCommands:
                     member_text += ' `BOT`'
 
                 yield member_text
-
-    cmd_invite_desc = (
-        'Sends a link in private that can be used to invite the bot to your server'
-    )
 
     async def cmd_invite(self, attributes, message):
         await self.bot.send_message(
