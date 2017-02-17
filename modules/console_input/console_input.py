@@ -13,7 +13,25 @@ class ConsoleInput:
             'exit',
         )
 
+        self.disable_daemon_thread_exit()
         self.bot.loop.create_task(self.loop())
+
+    @staticmethod
+    def disable_daemon_thread_exit():
+        import atexit
+        import concurrent.futures
+
+        def _python_exit():
+            concurrent.futures.thread._shutdown = True
+            items = list(concurrent.futures.thread._threads_queues.items())
+            for t, q in items:
+                q.put(None)
+            for t, q in items:
+                if not t.daemon:
+                    t.join()
+
+        atexit.unregister(concurrent.futures.thread._python_exit)
+        atexit.register(_python_exit)
 
     async def loop(self):
         await self.bot.wait_until_ready()
@@ -27,8 +45,8 @@ class ConsoleInput:
 
             if message == 'exit':
                 print('Shutting down!')
-                await self.bot.logout()
-                raise KeyboardInterrupt()
+                await self.bot.close()
+                return
 
             try:
                 exec(
