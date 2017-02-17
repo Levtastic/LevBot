@@ -41,6 +41,14 @@ class BotCommands:
                 ' bot to your server'
             )
         )
+        commands.register_handler(
+            'quit',
+            self.cmd_quit,
+            user_level=UserLevel.bot_owner,
+            description=(
+                'Immediately shuts down the bot'
+            )
+        )
 
     async def cmd_list_channels(self, attributes, message):
         channels = defaultdict(list)
@@ -129,3 +137,7 @@ class BotCommands:
                 discord.utils.oauth_url(self.bot.user.id)
             )
         )
+
+    async def cmd_quit(self, attributes, message):
+        await self.bot.send_message(message.channel, 'Shutting down.')
+        await self.bot.logout()
