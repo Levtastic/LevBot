@@ -47,7 +47,7 @@ class UserLevel(OrderedEnum):
     blacklisted        = -1
 
     @classmethod
-    def get(cls, user, channel=None):
+    def get(cls, user, channel_or_server):
         if str(user) in settings.owner_usernames:
             return cls.bot_owner
 
@@ -59,13 +59,15 @@ class UserLevel(OrderedEnum):
         if db_user and db_user.global_admin:
             return cls.global_bot_admin
 
-        if channel and channel.is_private:
+        if isinstance(channel_or_server, discord.Server):
+            channel = channel_or_server.default_channel
+        else:
+            channel = channel_or_server
+
+        if channel.is_private:
             return cls._get_private_level(user, channel)
 
-        if channel:
-            return cls._get_server_level(user, channel, db_user)
-
-        return cls.user
+        return cls._get_server_level(user, channel, db_user)
 
     @classmethod
     def _get_private_level(cls, user, channel):
