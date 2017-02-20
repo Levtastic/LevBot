@@ -11,7 +11,7 @@ class BotCommands:
 
     def register(self, commands):
         commands.register_handler(
-            'list channels',
+            'list all channels',
             self.cmd_list_channels,
             user_level=UserLevel.global_bot_admin,
             description=(
@@ -22,7 +22,7 @@ class BotCommands:
             )
         )
         commands.register_handler(
-            'list users',
+            'list all users',
             self.cmd_list_users,
             user_level=UserLevel.global_bot_admin,
             description=(
