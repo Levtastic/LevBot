@@ -54,17 +54,12 @@ class Commands:
 
         desc = self._get_command_description(dispatcher)
 
-        cmds = ''
-        for key, value in dispatcher.child_dispatchers.items():
-            if value.user_level <= user_level:
-                cmds += '{} {}\n'.format(cmd, key)
+        subcmds = self._get_sub_command_names(dispatcher, user_level)
+        cmds = '\n'.join('{} {}'.format(cmd, subcmd) for subcmd in subcmds)
 
+        help_text = ''
         if cmd:
-            help_text = '`{0}`\n'.format(cmd)
-            help_text += 'Minimum required level: {}\n\n'.format(level)
-
-        else:
-            help_text = ''
+            help_text = '`{}`\nMinimum required level: {}\n\n'.format(cmd, level)
 
         help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
@@ -79,6 +74,22 @@ class Commands:
         for handler in dispatcher.handlers:
             if handler.description:
                 yield handler.description
+
+    def _get_sub_command_names(self, dispatcher, user_level):
+        names = []
+
+        for key, value in dispatcher.child_dispatchers.items():
+            if value.user_level <= user_level:
+                names.append(self._get_full_command_name(key, value))
+
+        return names
+
+    def _get_full_command_name(self, name, dispatcher):
+        if len(dispatcher.child_dispatchers) == 1:
+            child = list(dispatcher.child_dispatchers.items())[0]
+            return '{} {}'.format(name, self._get_full_command_name(*child))
+
+        return name
 
     def handle_message(self, message):
         command = self._get_command(message)
