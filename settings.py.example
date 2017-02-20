@@ -3,3 +3,5 @@ bot_token = 'token'
 twitch_client_id = 'clientid'
 
 owner_usernames = ['name#1234']
+
+source_url = ''

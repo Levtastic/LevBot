@@ -1,4 +1,5 @@
 import discord
+import settings
 
 from collections import defaultdict
 from modules import UserLevel
@@ -49,6 +50,16 @@ class BotCommands:
                 'Immediately shuts down the bot'
             )
         )
+
+        if settings.source_url:
+            commands.register_handler(
+                'source',
+                self.cmd_source,
+                user_level=UserLevel.user,
+                description=(
+                    'Sends a link in private to view the bot source code'
+                )
+            )
 
     async def cmd_list_channels(self, attributes, message):
         channels = defaultdict(list)
@@ -141,3 +152,6 @@ class BotCommands:
     async def cmd_quit(self, attributes, message):
         await self.bot.send_message(message.channel, 'Shutting down.')
         await self.bot.logout()
+
+    async def cmd_source(self, attributes, message):
+        await self.bot.send_message(message.author, settings.source_url)
