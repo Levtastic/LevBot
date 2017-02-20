@@ -108,6 +108,17 @@ class CommandDispatcher:
         except CommandException as ex:
             await self._bot.send_message(message.channel, str(ex))
 
+        except:
+            await self._bot.send_message(
+                message.channel,
+                'Oh no, something went horribly wrong trying to complete this'
+                ' command. Please tell the owner of this bot what command you'
+                ' entered and roughly when this happened, and I\'ll get all'
+                ' fixed up as soon as possible. Thanks!'
+            )
+
+            raise
+
 
 class CommandException(Exception):
     pass
