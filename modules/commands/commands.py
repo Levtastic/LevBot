@@ -50,6 +50,8 @@ class Commands:
         else:
             cmd = attributes.strip()
 
+        level = dispatcher.user_level.name
+
         desc = self._get_command_description(dispatcher)
 
         cmds = ''
@@ -57,7 +59,13 @@ class Commands:
             if value.user_level <= user_level:
                 cmds += '{} {}\n'.format(cmd, key)
 
-        help_text = '`{0}`\n\n'.format(cmd) if cmd else ''
+        if cmd:
+            help_text = '`{0}`\n'.format(cmd)
+            help_text += 'Minimum required level: {}\n\n'.format(level)
+
+        else:
+            help_text = ''
+
         help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
 
