@@ -242,8 +242,10 @@ class AlertCommands:
             database.get_Streamer_list()
         ))
 
-        for chunk in self.get_alerts_text_chunks(alerts):
-            await self.bot.send_message(message.channel, chunk)
+        await self.bot.send_message(
+            message.channel,
+            self.get_alerts_text(alerts)
+        )
 
     def get_streamer_channels(self, message, username_filter, streamers):
         for streamer in streamers:
@@ -258,13 +260,6 @@ class AlertCommands:
 
             if UserLevel.get(message.author, channel) >= self.user_level:
                 yield streamer_channel
-
-    def get_alerts_text_chunks(self, streamer_channels):
-        batch_size = 20
-
-        for i in range(0, len(streamer_channels), batch_size):
-            channels_batch = streamer_channels[i:i+batch_size]
-            yield self.get_alerts_text(channels_batch)
 
     def get_alerts_text(self, streamer_channels):
         if not streamer_channels:
