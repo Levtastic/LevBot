@@ -1,7 +1,5 @@
 bot_token = 'token'
-
 twitch_client_id = 'clientid'
-
+pushbullet_token = ''
 owner_usernames = ['name#1234']
-
 source_url = ''

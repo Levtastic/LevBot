@@ -6,6 +6,7 @@ import settings
 
 from datetime import datetime
 from itertools import chain
+from pushbulletlogging import PushbulletHandler
 
 
 class LevBot(discord.Client):
@@ -75,6 +76,13 @@ def set_up_logging():
     streamhandler.setLevel(logging.ERROR)
     streamhandler.setFormatter(formatter)
     logger.addHandler(streamhandler)
+
+    if settings.pushbullet_token:
+        pushbullethandler = PushbulletHandler(access_token=settings.pushbullet_token)
+        pushbullethandler.setLevel(logging.ERROR)
+        pushbullethandler.setFormatter(formatter)
+        logger.addHandler(pushbullethandler)
+
 
 if __name__ == '__main__':
     set_up_logging()
