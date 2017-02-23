@@ -1,3 +1,4 @@
+import logging
 import asyncio
 
 from types import MappingProxyType
@@ -96,12 +97,13 @@ class CommandDispatcher:
             asyncio.ensure_future(self._wrapper(
                 handler.coroutine,
                 attributes,
-                message
+                message,
+                command
             ))
 
         return bool(handlers)
 
-    async def _wrapper(self, coroutine, attributes, message):
+    async def _wrapper(self, coroutine, attributes, message, command):
         try:
             await coroutine(attributes, message)
 
@@ -117,7 +119,9 @@ class CommandDispatcher:
                 ' fixed up as soon as possible. Thanks!'
             )
 
-            raise
+            logging.exception(
+                'Error in command {} {}'.format(command, attributes)
+            )
 
 
 class CommandException(Exception):

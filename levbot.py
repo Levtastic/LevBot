@@ -83,9 +83,15 @@ def set_up_logging():
         pushbullethandler.setFormatter(formatter)
         logger.addHandler(pushbullethandler)
 
+def remove_pushbullet_logger():
+    logger = logging.getLogger()
+    logger.handlers = [h for h in logger.handlers if not isinstance(h, PushbulletHandler)]
+
 
 if __name__ == '__main__':
     set_up_logging()
 
     bot = LevBot()
     bot.run(settings.bot_token)
+
+    remove_pushbullet_logger()
