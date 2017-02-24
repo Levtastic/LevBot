@@ -1,5 +1,5 @@
 from discord.utils import cached_slot_property
-from discord import NotFound
+from discord import NotFound, Forbidden
 from ..model import Model
 from modules import database
 
@@ -14,7 +14,7 @@ class UserServer(Model):
         try:
             return self.bot.get_server(self.server_did)
 
-        except NotFound:
+        except (NotFound, Forbidden):
             return None
 
     def define_table(self):

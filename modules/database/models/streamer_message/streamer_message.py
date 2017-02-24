@@ -1,5 +1,5 @@
 from discord.utils import cached_slot_property
-from discord import NotFound
+from discord import NotFound, Forbidden
 from ..model import Model
 from modules import database
 
@@ -14,7 +14,7 @@ class StreamerMessage(Model):
         try:
             return self.bot.get_channel(self.channel_did)
 
-        except NotFound:
+        except (NotFound, Forbidden):
             return None
 
     @cached_slot_property('_streamer_channel')
@@ -61,7 +61,7 @@ class StreamerMessage(Model):
                         self.message_did
                     )
 
-                except NotFound:
+                except (NotFound, Forbidden):
                     self._message = None
 
             return self._message
