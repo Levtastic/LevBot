@@ -39,23 +39,18 @@ class ModelCommands:
         fmt = 'Manually {} a {} model {} the database'
 
         if command == 'add':
-            message = fmt.format('adds', model_name, 'to')
+            return fmt.format('adds', model_name, 'to')
 
         elif command == 'edit':
-            message = fmt.format('edits', model_name, 'in')
+            return fmt.format('edits', model_name, 'in')
 
         elif command == 'remove':
-            message = fmt.format('removes', model_name, 'from')
+            return fmt.format('removes', model_name, 'from')
 
         elif command == 'list':
-            message = 'Lists all {} models in the database'.format(model_name)
+            return 'Lists all {} models in the database'.format(model_name)
 
-        else:
-            message = ''
-
-        message += '\n\n' + self.get_syntax(command, model_name)
-
-        return message
+        return ''
 
     def get_model(self, model_name):
         factory_name = 'get_{}'.format(model_name)
