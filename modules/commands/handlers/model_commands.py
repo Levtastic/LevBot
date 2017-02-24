@@ -24,7 +24,8 @@ class ModelCommands:
                 '{} {}'.format(command, model),
                 self.get_partial(command, model),
                 user_level=UserLevel.global_bot_admin,
-                description=self.get_description(command, model)
+                description=self.get_description(command, model),
+                syntax=self.get_syntax(command, model)
             )
 
     def get_partial(self, command, model):
@@ -52,8 +53,7 @@ class ModelCommands:
         else:
             message = ''
 
-        model = self.get_model(model_name)
-        message += '\n\n' + self.get_syntax(command, model_name, model)
+        message += '\n\n' + self.get_syntax(command, model_name)
 
         return message
 
@@ -62,7 +62,9 @@ class ModelCommands:
         factory = getattr(database, factory_name)
         return factory()
 
-    def get_syntax(self, command, model_name, model):
+    def get_syntax(self, command, model_name):
+        model = self.get_model(model_name)
+
         fields = ''
         if command == 'edit':
             fields = '<search_key> = <search_value> '
@@ -73,12 +75,12 @@ class ModelCommands:
         else:
             fields += ', '.join('{} = <value>'.format(field) for field in model.fields)
 
-        return 'Syntax: `{} {} {}`'.format(command, model_name, fields)
+        return '{} {} {}'.format(command, model_name, fields)
 
-    async def cmd_add(self, model_name, attributes, message):
+    async def cmd_add(self, model_name, message, attributes):
         model = self.get_model(model_name)
 
-        syntax_message = self.get_syntax('add', model_name, model)
+        syntax_message = self.get_syntax('add', model_name)
 
         try:
             pairs = list(self.get_attribute_pairs(attributes, model))
@@ -123,10 +125,10 @@ class ModelCommands:
         for field, value in pairs:
             setattr(model, field, value)
 
-    async def cmd_edit(self, model_name, attributes, message):
+    async def cmd_edit(self, model_name, message, attributes):
         model = self.get_model(model_name)
 
-        syntax_message = self.get_syntax('edit', model_name, model)
+        syntax_message = self.get_syntax('edit', model_name)
 
         try:
             print(repr(attributes))
@@ -175,10 +177,10 @@ class ModelCommands:
 
         return models[0]
 
-    async def cmd_remove(self, model_name, attributes, message):
+    async def cmd_remove(self, model_name, message, attributes):
         model = self.get_model(model_name)
 
-        syntax_message = self.get_syntax('remove', model_name, model)
+        syntax_message = self.get_syntax('remove', model_name)
 
         try:
             pairs = list(self.get_attribute_pairs(attributes, model))
@@ -198,7 +200,7 @@ class ModelCommands:
             '`{}` deleted'.format(model_name)
         )
 
-    async def cmd_list(self, model_name, attributes, message):
+    async def cmd_list(self, model_name, message, attributes=''):
         model = self.get_model(model_name)
 
         if attributes:
@@ -206,7 +208,7 @@ class ModelCommands:
                 pairs = list(self.get_attribute_pairs(attributes, model))
 
             except ValueError:
-                raise CommandException(self.get_syntax(add, model_name, model))
+                raise CommandException(self.get_syntax(add, model_name))
 
         else:
             pairs = []
