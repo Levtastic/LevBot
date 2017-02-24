@@ -63,6 +63,11 @@ def set_up_logging():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
+    add_file_logger(logger, formatter)
+    add_console_logger(logger, formatter)
+    add_pushbullet_logger(logger, formatter)
+
+def add_file_logger(logger, formatter):
     os.makedirs('logs', exist_ok=True)
     filename = 'logs/{}.log'.format(
         datetime.now().strftime('%Y-%m-%d %H-%M-%S')
@@ -72,16 +77,28 @@ def set_up_logging():
     filehandler.setFormatter(formatter)
     logger.addHandler(filehandler)
 
+    return filehandler
+
+def add_console_logger(logger, formatter):
     streamhandler = logging.StreamHandler()
     streamhandler.setLevel(logging.ERROR)
     streamhandler.setFormatter(formatter)
     logger.addHandler(streamhandler)
 
-    if settings.pushbullet_token:
-        pushbullethandler = PushbulletHandler(access_token=settings.pushbullet_token)
-        pushbullethandler.setLevel(logging.ERROR)
-        pushbullethandler.setFormatter(formatter)
-        logger.addHandler(pushbullethandler)
+    return streamhandler
+
+def add_pushbullet_logger(logger, formatter):
+    if not settings.pushbullet_token:
+        return None
+
+    pushbullethandler = PushbulletHandler(
+        access_token=settings.pushbullet_token
+    )
+    pushbullethandler.setLevel(logging.ERROR)
+    pushbullethandler.setFormatter(formatter)
+    logger.addHandler(pushbullethandler)
+
+    return pushbullethandler
 
 def remove_pushbullet_logger():
     logger = logging.getLogger()
