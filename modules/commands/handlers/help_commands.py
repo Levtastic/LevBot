@@ -74,11 +74,18 @@ class HelpCommands:
                 yield handler.description
 
     def get_subcommands_text(self, command, dispatcher, user_level):
+        if command:
+            command = command + ' '
+
         subcmds = self.get_sub_command_names(dispatcher, user_level)
-        subcmds_text = '\n'.join('{} {}'.format(command, subcmd) for subcmd in subcmds)
+        subcmds_text = '\n'.join('{}{}'.format(command, subcmd) for subcmd in subcmds)
 
         if subcmds_text:
-            return '**Commands**:\n' + subcmds_text
+            return (
+                '**Commands**:\n'
+                '{}\n\n'
+                'Use `help {}<command>` for more information'
+            ).format(subcmds_text, command)
 
         return None
 
