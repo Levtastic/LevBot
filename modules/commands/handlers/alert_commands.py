@@ -121,6 +121,19 @@ class AlertCommands:
         if UserLevel.get(author, channel) < self.user_level:
             raise CommandException('You do not have access to alerts in that channel')
 
+        if not self.can_send_in(channel):
+            raise CommandException(
+                'This bot doesn\'t have permission to send and'
+                ' read messages in that channel'
+            )
+
+    def can_send_in(self, channel):
+        if channel.is_private:
+            return True
+
+        permissions = channel.permissions_for(channel.server.me)
+        return permissions.send_messages
+
     def build_streamer_channel(self, username, streamer, channel, template):
         if self.streamer_channel_exists(streamer, channel):
             raise CommandException(
@@ -230,5 +243,16 @@ class AlertCommands:
         alertfmt = '`{0.streamer.username}` in `{1}`'
 
         return '.\n{}'.format('\n'.join(
-            alertfmt.format(channel, self.get_channel_name(channel.channel)) for channel in streamer_channels
+            self.get_alert_channel_text(channel) for channel in streamer_channels
         ))
+
+    def get_alert_channel_text(self, streamer_channel):
+        channel_text = '`{0.streamer.username}` in `{1}`'.format(
+            streamer_channel,
+            self.get_channel_name(streamer_channel.channel)
+        )
+
+        if not self.can_send_in(streamer_channel.channel):
+            channel_text += ' (cannot send to channel)'
+
+        return channel_text

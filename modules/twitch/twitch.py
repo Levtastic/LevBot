@@ -8,6 +8,7 @@ import settings
 from string import Template
 from collections import defaultdict
 from concurrent.futures import CancelledError
+from discord import NotFound, Forbidden
 from modules import database
 
 
@@ -90,11 +91,15 @@ class Twitch:
         )
 
     async def send_or_update_message(self, streamer_channel, text):
-        if not streamer_channel.streamer_messages:
-            return await self.send_message(streamer_channel, text)
+        try:
+            if not streamer_channel.streamer_messages:
+                return await self.send_message(streamer_channel, text)
 
-        for streamer_message in streamer_channel.streamer_messages:
-            await self.update_message(streamer_message, text)
+            for streamer_message in streamer_channel.streamer_messages:
+                await self.update_message(streamer_message, text)
+
+        except (NotFound, Forbidden):
+            pass
 
     async def send_message(self, streamer_channel, text):
         message = await self.bot.send_message(streamer_channel.channel, text)
