@@ -24,54 +24,76 @@ class HelpCommands:
     async def cmd_help(self, message, command=''):
         user_level = UserLevel.get(message.author, message.channel)
         dispatcher, remainder = self.commands.root.get(command, user_level)
+        command = self.strip_command(command, remainder)
 
-        if remainder:
-            cmd = command[:-len(remainder)].strip()
-        else:
-            cmd = command.strip()
-
-        level = dispatcher.user_level.name
-
-        desc = self._get_command_description(dispatcher)
-
-        subcmds = self._get_sub_command_names(dispatcher, user_level)
-        cmds = '\n'.join('{} {}'.format(cmd, subcmd) for subcmd in subcmds)
-
-        help_text = ''
-        if cmd:
-            help_text = '`{}`\nMinimum required level: {}\n\n'.format(cmd, level)
-
-        syntax = '\n'.join(
-            '`Syntax: {}`'.format(h.syntax) for h in dispatcher.handlers
+        help_text_pieces = (
+            self.get_name_and_level_text(command, dispatcher),
+            self.get_syntax_text(dispatcher),
+            self.get_description_text(dispatcher),
+            self.get_subcommands_text(command, dispatcher, user_level),
         )
 
-        help_text += '{}\n\n'.format(syntax) if syntax else ''
-        help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
-        help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
+        await self.bot.send_message(message.author, '\n\n'.join(
+            piece for piece in help_text_pieces if piece
+        ))
 
-        await self.bot.send_message(message.author, help_text)
+    def strip_command(self, command, remainder):
+        if remainder:
+            return command[:-len(remainder)].strip()
 
-    def _get_command_description(self, dispatcher):
-        pieces = self._get_comment_description_pieces(dispatcher)
-        return '\n{}\n'.format('-' * 50).join(pieces)
+        return command.strip()
 
-    def _get_comment_description_pieces(self, dispatcher):
+    def get_name_and_level_text(self, command, dispatcher):
+        if command:
+            return (
+                '`{0}`\n'
+                'Minimum required level: {1.name}'
+            ).format(command, dispatcher.user_level)
+
+        return None
+
+    def get_syntax_text(self, dispatcher):
+        fmt = 'Syntax: `{}`'
+
+        return '\n'.join(
+            fmt.format(handler.syntax) for handler in dispatcher.handlers
+        )
+
+    def get_description_text(self, dispatcher):
+        descriptions = self.get_comment_description_pieces(dispatcher)
+        description_text = '\n{}\n'.format('-' * 50).join(descriptions)
+
+        if description_text:
+            return '**Description:**\n' + description_text
+
+        return None
+
+    def get_comment_description_pieces(self, dispatcher):
         for handler in dispatcher.handlers:
             if handler.description:
                 yield handler.description
 
-    def _get_sub_command_names(self, dispatcher, user_level):
+    def get_subcommands_text(self, command, dispatcher, user_level):
+        subcmds = self.get_sub_command_names(dispatcher, user_level)
+        subcmds_text = '\n'.join('{} {}'.format(command, subcmd) for subcmd in subcmds)
+
+        if subcmds_text:
+            return '**Commands**:\n' + subcmds_text
+
+        return None
+
+    def get_sub_command_names(self, dispatcher, user_level):
         names = []
 
         for key, value in dispatcher.child_dispatchers.items():
             if value.user_level <= user_level:
-                names.append(self._get_full_command_name(key, value))
+                names.append(self.get_full_command_name(key, value))
 
         return names
 
-    def _get_full_command_name(self, name, dispatcher):
+    def get_full_command_name(self, name, dispatcher):
         if len(dispatcher.child_dispatchers) == 1:
             child = list(dispatcher.child_dispatchers.items())[0]
-            return '{} {}'.format(name, self._get_full_command_name(*child))
+            return '{} {}'.format(name, self.get_full_command_name(*child))
 
         return name
