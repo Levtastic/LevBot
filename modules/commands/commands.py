@@ -1,3 +1,4 @@
+import inspect
 import settings
 
 from modules import database
@@ -21,18 +22,37 @@ class Commands:
         self._register_sub_handlers()
 
     def register_handler(self, command, coroutine, **kwargs):
-        handler = self.build_handler(coroutine, **kwargs)
+        handler = self.build_handler(command, coroutine, **kwargs)
         return self.root.register_handler(handler, command)
 
-    def build_handler(self, coroutine, **kwargs):
+    def build_handler(self, command, coroutine, **kwargs):
         defaults = {
             'user_level': UserLevel.server_bot_admin,
             'description': '',
+            'syntax': self.get_syntax_for(coroutine, command),
         }
 
         defaults.update(kwargs)
 
         return Handler(coroutine, **defaults)
+
+    def get_syntax_for(self, coroutine, command):
+        parameters = list(inspect.signature(coroutine).parameters.values())
+
+        return '{} {}'.format(
+            command,
+            ' '.join(self._get_parameter_syntax(p) for p in parameters[1:])
+        )
+
+    def _get_parameter_syntax(self, parameter):
+        if parameter.default == parameter.empty:
+            fmt = '<{0.name}>'
+        elif parameter.default is '':
+            fmt = '<{0.name} (optional)>'
+        else:
+            fmt = '<{0.name} (default: "{0.default}")>'
+
+        return fmt.format(parameter)
 
     def _register_sub_handlers(self):
         for sub_handler in dir(handlers):
@@ -41,14 +61,14 @@ class Commands:
 
             getattr(handlers, sub_handler)(self)
 
-    async def cmd_help(self, attributes, message):
+    async def cmd_help(self, message, command=''):
         user_level = UserLevel.get(message.author, message.channel)
-        dispatcher, remainder = self.root.get(attributes, user_level)
+        dispatcher, remainder = self.root.get(command, user_level)
 
         if remainder:
-            cmd = attributes[:-len(remainder)].strip()
+            cmd = command[:-len(remainder)].strip()
         else:
-            cmd = attributes.strip()
+            cmd = command.strip()
 
         level = dispatcher.user_level.name
 
@@ -61,6 +81,11 @@ class Commands:
         if cmd:
             help_text = '`{}`\nMinimum required level: {}\n\n'.format(cmd, level)
 
+        syntax = '\n'.join(
+            '`Syntax: {}`'.format(h.syntax) for h in dispatcher.handlers
+        )
+
+        help_text += '{}\n\n'.format(syntax) if syntax else ''
         help_text += '**Description:**\n{}\n\n'.format(desc) if desc else ''
         help_text += '**Commands:**\n{}\n\n'.format(cmds) if cmds else ''
 

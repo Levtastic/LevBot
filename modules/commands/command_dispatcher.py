@@ -1,3 +1,4 @@
+import inspect
 import logging
 import asyncio
 
@@ -7,7 +8,12 @@ from modules import database
 from modules import UserLevel
 
 
-Handler = namedtuple('Handler', ('coroutine', 'user_level', 'description'))
+Handler = namedtuple('Handler', (
+    'coroutine',
+    'user_level',
+    'description',
+    'syntax',
+))
 
 
 class CommandDispatcher:
@@ -95,7 +101,7 @@ class CommandDispatcher:
 
         for handler in handlers:
             asyncio.ensure_future(self._wrapper(
-                handler.coroutine,
+                handler,
                 attributes,
                 message,
                 command
@@ -103,9 +109,10 @@ class CommandDispatcher:
 
         return bool(handlers)
 
-    async def _wrapper(self, coroutine, attributes, message, command):
+    async def _wrapper(self, handler, attributes, message, command):
         try:
-            await coroutine(attributes, message)
+            binding = self._get_binding_for(handler, attributes, message)
+            await handler.coroutine(*binding.args, **binding.kwargs)
 
         except CommandException as ex:
             await self._bot.send_message(message.channel, str(ex))
@@ -122,6 +129,22 @@ class CommandDispatcher:
             logging.exception(
                 'Error in command {} {}'.format(command, attributes)
             )
+
+    def _get_binding_for(self, handler, attributes, message):
+        signature = inspect.signature(handler.coroutine)
+
+        try:
+            if len(signature.parameters) > 1:
+                attributes = attributes.split(' ', len(signature.parameters) - 2)
+                return signature.bind(
+                    message,
+                    *[att for att in attributes if att is not '']
+                )
+
+            return signature.bind(message)
+
+        except TypeError:
+            raise CommandException('`Syntax: {}`'.format(handler.syntax))
 
 
 class CommandException(Exception):
