@@ -144,7 +144,7 @@ class CommandDispatcher:
             return signature.bind(message)
 
         except TypeError:
-            raise CommandException('`Syntax: {}`'.format(handler.syntax))
+            raise CommandException('Syntax: `{}`'.format(handler.syntax))
 
 
 class CommandException(Exception):
