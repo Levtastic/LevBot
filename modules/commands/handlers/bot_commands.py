@@ -16,10 +16,7 @@ class BotCommands:
             self.cmd_list_all_channels,
             user_level=UserLevel.global_bot_admin,
             description=(
-                'Lists channels the bot can currently see\n'
-                '\n'
-                'Syntax: `list channels`\n'
-                'or `list channels <name>`'
+                'Lists channels the bot can currently see'
             )
         )
         commands.register_handler(
@@ -27,10 +24,7 @@ class BotCommands:
             self.cmd_list_all_users,
             user_level=UserLevel.global_bot_admin,
             description=(
-                'Lists users the bot can currently see\n'
-                '\n'
-                'Syntax: `list users`\n'
-                'or `list users <name>`'
+                'Lists users the bot can currently see'
             )
         )
         commands.register_handler(
@@ -61,10 +55,10 @@ class BotCommands:
                 )
             )
 
-    async def cmd_list_all_channels(self, attributes, message):
+    async def cmd_list_all_channels(self, message, channel_filter=''):
         channels = defaultdict(list)
 
-        for server, channel in self.get_text_channels(attributes):
+        for server, channel in self.get_text_channels(channel_filter):
             channels[server].append(channel)
 
         await self.bot.send_message(
@@ -101,10 +95,10 @@ class BotCommands:
 
                 yield channel_text
 
-    async def cmd_list_all_users(self, attributes, message):
+    async def cmd_list_all_users(self, message, user_filter=''):
         members = defaultdict(list)
 
-        for server, member in self.get_members(attributes):
+        for server, member in self.get_members(user_filter):
             members[server].append(member)
 
         await self.bot.send_message(
@@ -141,7 +135,7 @@ class BotCommands:
 
                 yield member_text
 
-    async def cmd_invite(self, attributes, message):
+    async def cmd_invite(self, message):
         await self.bot.send_message(
             message.author,
             'Use this invite link to add me to your server: {}'.format(
@@ -149,9 +143,9 @@ class BotCommands:
             )
         )
 
-    async def cmd_quit(self, attributes, message):
+    async def cmd_quit(self, message):
         await self.bot.send_message(message.channel, 'Shutting down.')
         await self.bot.logout()
 
-    async def cmd_source(self, attributes, message):
+    async def cmd_source(self, message):
         await self.bot.send_message(message.author, settings.source_url)
