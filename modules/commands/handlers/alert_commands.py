@@ -128,6 +128,9 @@ class AlertCommands:
             )
 
     def can_send_in(self, channel):
+        if channel.is_private:
+            return True
+
         permissions = channel.permissions_for(channel.server.me)
         return permissions.send_messages
 
