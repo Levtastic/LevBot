@@ -230,5 +230,20 @@ class AlertCommands:
         alertfmt = '`{0.streamer.username}` in `{1}`'
 
         return '.\n{}'.format('\n'.join(
-            alertfmt.format(channel, self.get_channel_name(channel.channel)) for channel in streamer_channels
+            self.get_alert_channel_text(channel) for channel in streamer_channels
         ))
+
+    def get_alert_channel_text(self, streamer_channel):
+        channel_text = '`{0.streamer.username}` in `{1}`'.format(
+            streamer_channel,
+            self.get_channel_name(streamer_channel.channel)
+        )
+
+        permissions = streamer_channel.channel.permissions_for(
+            streamer_channel.server.me
+        )
+
+        if not permissions.send_messages:
+            channel_text += ' (cannot send to channel)'
+
+        return channel_text
