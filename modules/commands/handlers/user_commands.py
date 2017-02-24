@@ -12,26 +12,28 @@ class UserCommands:
         self.register(commands)
 
     def register(self, commands):
+        shared_info = (
+            'usertype can be "admin" or "blacklist"\n'
+            '\n'
+            'Admins are able to give server-level commands to the bot'
+            ' without needing the Manage Channel permission in the server'
+            ' or any channels.\n'
+            '\n'
+            'Blacklisted users are completely ignored by the bot in your'
+            ' server, even if they do have the Manage Channel permission.'
+            ' (Note: The server owner cannot be blacklisted)\n'
+            '\n'
+            'If a user is both an admin and blacklisted using this command,'
+            ' the bot will treat them as Blacklisted'
+        )
+
         commands.register_handler(
             'add user',
             self.cmd_add_user,
             user_level=self.user_level,
             description=(
                 'Adds either an admin or a blacklisted user to a server\n'
-                '\n'
-                'Syntax: `add user <username> <"admin" or "blacklist">'
-                ' <server name or "here" (optional)>\n'
-                '\n'
-                'Admins are able to give server-level commands to the bot'
-                ' without needing the Manage Channel permission in the server'
-                ' or any channels.\n'
-                '\n'
-                'Blacklisted users are completely ignored by the bot in your'
-                ' server, even if they do have the Manage Channel permission.'
-                ' (Note: The server owner cannot be blacklisted)\n'
-                '\n'
-                'If a user is both an admin and blacklisted using this command,'
-                ' the bot will treat them as Blacklisted'
+                '\n' + shared_info
             )
         )
         commands.register_handler(
@@ -40,12 +42,7 @@ class UserCommands:
             user_level=self.user_level,
             description=(
                 'Removes either an admin or a blacklisted user from a server\n'
-                '\n'
-                'Syntax: `remove user <username> <"admin" or "blacklist">'
-                ' <server name or "here" (optional)>\n'
-                '\n'
-                'For more information on admins and blacklisted users, see'
-                ' the `add user` command.'
+                '\n' + shared_info
             )
         )
         commands.register_handler(
@@ -55,24 +52,16 @@ class UserCommands:
             description=(
                 'Lists users with admin or blacklisted status given through the'
                 ' `add user` command.\n'
-                'Syntax: `list users <username (optional)>'
-                ' <"admin" or "blacklist" or "both" (optional)>'
-                ' <server name or "here" (optional)>`\n'
-                '\n'
                 'If you leave out the server name parameter, the bot will reply with'
                 ' **ALL** users you have permission to view in all servers where you'
                 ' are considered an admin by the bot.\n'
                 'To only view users for a specific server, name the server or use'
                 ' the keyword "here" in the `server name` parameter slot.\n'
-                '\n'
-                'For more information on admins and blacklisted users, see'
-                ' the `add user` command.'
+                '\n' + shared_info
             )
         )
 
-    async def cmd_add_user(self, attributes, message):
-        username, usertype, servername = self.get_attributes('add', attributes)
-
+    async def cmd_add_user(self, message, username, usertype, servername='here'):
         server = self.get_server(servername, message)
         duser = self.get_discord_user(server, username)
         user = self.ensure_user(server, duser)
@@ -104,22 +93,8 @@ class UserCommands:
 
         raise CommandException('Unknown user type `{}`'.format(usertype))
 
-    def get_attributes(self, command, attributes):
-        try:
-            username, usertype, servername = (attributes.split(' ', 2) + [''])[:3]
-            if username and usertype in ('admin', 'blacklist'):
-                return username, usertype, servername
-
-        except ValueError:
-            pass
-
-        raise CommandException(
-            ('Syntax: `{} user <username> <"admin" or "blacklist">'
-            ' <server name or "here" (optional)>`').format(command)
-        )
-
     def get_server(self, name, message):
-        if name.lower() in ('', 'here'):
+        if name.lower() == 'here':
             if message.channel.is_private:
                 raise CommandException(
                     "This command isn't supported for private channels"
@@ -191,9 +166,7 @@ class UserCommands:
 
         return userserver
 
-    async def cmd_remove_user(self, attributes, message):
-        username, usertype, servername = self.get_attributes('remove', attributes)
-
+    async def cmd_remove_user(self, message, username, usertype, servername='here'):
         server = self.get_server(servername, message)
         duser = self.get_discord_user(server, username)
         user = self.ensure_user(server, duser)
@@ -236,9 +209,7 @@ class UserCommands:
         if not user.user_servers:
             user.delete()
 
-    async def cmd_list_users(self, attributes, message):
-        listtype, servername, username = self.get_list_attributes(attributes)
-
+    async def cmd_list_users(self, message, listtype='both', servername='', username=''):
         users = database.get_User_list()
 
         if servername:
@@ -249,21 +220,6 @@ class UserCommands:
         text = await self.get_list_text(users, username, listtype, server, message)
 
         await self.bot.send_message(message.channel, text)
-
-    def get_list_attributes(self, attributes):
-        try:
-            ltype, servername, username = (attributes.split(' ', 2) + (['']*2))[:3]
-            return ltype, servername, username
-
-        except ValueError:
-            pass
-
-        raise CommandException(
-            'Syntax: `list users'
-            ' <"admin" or "blacklist" or "both" (optional)>'
-            ' <server name or "here" (optional)>'
-            ' <username (optional)>`'
-        )
 
     async def get_list_text(self, users, username, listtype, server, message):
         pieces = []
