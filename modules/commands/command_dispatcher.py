@@ -23,6 +23,8 @@ class CommandDispatcher:
         self._child_dispatchers = {}
         self._handlers = []
 
+        self.child_dispatchers = MappingProxyType(self._child_dispatchers)
+
     @property
     def command(self):
         return self._command
@@ -30,10 +32,6 @@ class CommandDispatcher:
     @property
     def handlers(self):
         return list(self._handlers)
-
-    @property
-    def child_dispatchers(self):
-        return MappingProxyType(self._child_dispatchers)
 
     @property
     def user_level(self):
