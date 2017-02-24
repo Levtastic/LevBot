@@ -19,9 +19,6 @@ class AlertCommands:
             description=(
                 'Adds streamer alerts to channels\n'
                 '\n'
-                'Syntax:'
-                ' `add alert <username> <channel name/id or "here"> <template>`\n'
-                '\n'
                 '`<template>` is optional and allows an alert to have a custom'
                 ' message when someone starts streaming. It is a format string'
                 ' that stream data is passed through before being sent to the'
@@ -46,9 +43,7 @@ class AlertCommands:
             self.cmd_remove_alert,
             user_level=self.user_level,
             description=(
-                'Removes streamer alerts from channels\n'
-                '\n'
-                'Syntax: `remove alert <username> <channel name/id or "here">`'
+                'Removes streamer alerts from channels'
             )
         )
         commands.register_handler(
@@ -56,16 +51,11 @@ class AlertCommands:
             self.cmd_list_alerts,
             user_level=self.user_level,
             description=(
-                'Lists all streamer alerts currently registered\n'
-                '\n'
-                'Syntax: `list alerts`\n'
-                'or `list alerts <streamer_username>`'
+                'Lists all streamer alerts currently registered'
             )
         )
 
-    async def cmd_add_alert(self, attributes, message):
-        username, channel_name, template = self.get_add_attributes(attributes)
-
+    async def cmd_add_alert(self, message, username, channel_name='here', template=''):
         streamer = self.ensure_streamer(username)
 
         channel = self.get_channel(channel_name, message)
@@ -89,19 +79,6 @@ class AlertCommands:
             )
         )
 
-    def get_add_attributes(self, attributes):
-        try:
-            username, channel_name, template = (attributes.split(' ', 2) + (['']*2))[:3]
-            if username:
-                return username, channel_name, template
-
-        except ValueError:
-            pass
-
-        raise CommandException(
-            'Syntax: `add alert <username> <channel name/id or "here"> <template>`'
-        )
-
     def ensure_streamer(self, username):
         streamer = database.get_Streamer_by_username(username.lower())
 
@@ -113,7 +90,7 @@ class AlertCommands:
         return streamer
 
     def get_channel(self, name, message):
-        if name.lower() in ('', 'here'):
+        if name.lower() == 'here':
             return message.channel
 
         channel = self.bot.get_channel(name)
@@ -147,7 +124,7 @@ class AlertCommands:
     def build_streamer_channel(self, username, streamer, channel, template):
         if self.streamer_channel_exists(streamer, channel):
             raise CommandException(
-                'An alert for `{}` in `` already exists'.format(
+                'An alert for `{}` in `{}` already exists'.format(
                     username,
                     self.get_channel_name(channel)
                 )
@@ -175,9 +152,7 @@ class AlertCommands:
 
         return bool(streamer_channels)
 
-    async def cmd_remove_alert(self, attributes, message):
-        username, channel_name = self.get_remove_attributes(attributes)
-
+    async def cmd_remove_alert(self, message, username, channel_name='here'):
         streamer = self.get_streamer(username)
 
         channel = self.get_channel(channel_name, message)
@@ -198,19 +173,6 @@ class AlertCommands:
 
         if not streamer.streamer_channels:
             streamer.delete()
-
-    def get_remove_attributes(self, attributes):
-        try:
-            username, channel_name = (attributes.split(' ', 1) + [''])[:2]
-            if username:
-                return username, channel_name
-
-        except ValueError:
-            pass
-
-        raise CommandException(
-            'Syntax: `remove alert <username> <channel name/id or "here">`'
-        )
 
     def get_streamer(self, username):
         streamer = database.get_Streamer_by_username(username.lower())
@@ -235,10 +197,10 @@ class AlertCommands:
 
         return streamer_channel
 
-    async def cmd_list_alerts(self, attributes, message):
+    async def cmd_list_alerts(self, message, username_filter=''):
         alerts = list(self.get_streamer_channels(
             message,
-            attributes.lower(),
+            username_filter.lower(),
             database.get_Streamer_list()
         ))
 
