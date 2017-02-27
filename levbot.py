@@ -39,11 +39,7 @@ class LevBot(discord.Client):
             asyncio.ensure_future(handler(*args, **kwargs))
 
     async def on_ready(self):
-        print('Connected!')
-        print('Username: "{!s}"'.format(self.user))
-        print('Invite URL: "{}"'.format(
-            discord.utils.oauth_url(self.user.id)
-        ))
+        print('Connected as {!s}'.format(self.user))
 
     async def send_message(self, destination, content=None, *args, **kwargs):
         if content and len(str(content)) > self.max_message_len:
