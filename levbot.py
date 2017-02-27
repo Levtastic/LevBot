@@ -17,6 +17,7 @@ class LevBot(discord.Client):
 
         self.max_message_len = 2000
         self.newline_search_len = 200
+        self.space_search_len = 100
 
         self._event_handlers = defaultdict(list)
 
@@ -59,6 +60,9 @@ class LevBot(discord.Client):
         piece = string[:self.max_message_len]
         if '\n' in piece[-self.newline_search_len:]:
             piece = piece.rsplit('\n', 1)[0]
+
+        elif ' ' in piece[-self.space_search_len:]:
+            piece = piece.rsplit(' ', 1)[0]
 
         return piece, string[len(piece):]
 
