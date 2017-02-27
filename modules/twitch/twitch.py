@@ -10,6 +10,7 @@ from collections import defaultdict
 from concurrent.futures import CancelledError
 from discord import NotFound, Forbidden
 from modules import database
+from utils import escape
 
 
 class Twitch:
@@ -82,12 +83,12 @@ class Twitch:
 
     def apply_template(self, template, twitch_data):
         return Template(template).safe_substitute(
-            channel_name=twitch_data['channel']['display_name'],
-            game=twitch_data['channel']['game'],
-            title=twitch_data['channel']['status'],
-            url=twitch_data['channel']['url'],
-            viewers=twitch_data['viewers'],
-            followers=twitch_data['channel']['followers']
+            channel_name=escape(twitch_data['channel']['display_name']),
+            game=escape(twitch_data['channel']['game']),
+            title=escape(twitch_data['channel']['status']),
+            url=escape(twitch_data['channel']['url']),
+            viewers=escape(str(twitch_data['viewers'])),
+            followers=escape(str(twitch_data['channel']['followers']))
         )
 
     async def send_or_update_message(self, streamer_channel, text):
