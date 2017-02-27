@@ -9,7 +9,7 @@ class Database:
         self.bot = None
         self.database = None
 
-    def init(self, bot, db_name='levbot.db'):
+    def __call__(self, bot, db_name='levbot.db'):
         self.bot = bot
 
         self.database = sqlite3.connect(db_name)

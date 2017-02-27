@@ -20,11 +20,11 @@ class LevBot(discord.Client):
 
         self._event_handlers = defaultdict(list)
 
-        modules.database.init(self)
+        self._load_modules()
 
-        modules.Commands(self)
-        modules.Twitch(self)
-        modules.ConsoleInput(self)
+    def _load_modules(self):
+        for module in modules.to_init:
+            module(self)
 
     def register_event(self, event, coroutine):
         self._event_handlers[event].append(coroutine)
