@@ -1,5 +1,6 @@
 import sys
 import sqlite3
+import settings
 
 from contextlib import closing
 
@@ -7,13 +8,12 @@ from contextlib import closing
 class Database:
     def __init__(self):
         self.bot = None
-        self.database = None
 
-    def __call__(self, bot, db_name='levbot.db'):
-        self.bot = bot
-
-        self.database = sqlite3.connect(db_name)
+        self.database = sqlite3.connect(settings.db_name)
         self.database.row_factory = sqlite3.Row
+
+    def __call__(self, bot):
+        self.bot = bot
 
     def __getattr__(self, name):
         if name.startswith('get_'):

@@ -1,4 +1,5 @@
 bot_token = 'token'
+db_name = 'levbot.db'
 twitch_client_id = 'clientid'
 pushbullet_token = ''
 owner_usernames = ['name#1234']
