@@ -14,6 +14,8 @@ class Commands:
 
         self._register_sub_handlers()
 
+        bot.register_event('on_message', self._on_message)
+
     def _register_sub_handlers(self):
         for sub_handler in dir(handlers):
             if not sub_handler[0].isupper():
@@ -54,7 +56,7 @@ class Commands:
 
         return fmt.format(parameter)
 
-    def handle_message(self, message):
+    async def _on_message(self, message):
         command = self._get_command(message)
 
         if command:

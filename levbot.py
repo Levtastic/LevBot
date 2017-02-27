@@ -1,10 +1,12 @@
 import os
 import logging
+import asyncio
 import discord
 import modules
 import settings
 
 from datetime import datetime
+from collections import defaultdict
 from itertools import chain
 from pushbulletlogging import PushbulletHandler
 
@@ -16,12 +18,25 @@ class LevBot(discord.Client):
         self.max_message_len = 2000
         self.newline_search_len = 200
 
+        self._event_handlers = defaultdict(list)
+
         modules.database.init(self)
 
-        self.commands = modules.Commands(self)
-
+        modules.Commands(self)
         modules.Twitch(self)
         modules.ConsoleInput(self)
+
+    def register_event(self, event, coroutine):
+        self._event_handlers[event].append(coroutine)
+
+    def unregister_event(self, event, coroutine):
+        self._event_handlers[event].remove(coroutine)
+
+    def dispatch(self, event, *args, **kwargs):
+        super().dispatch(event, *args, **kwargs)
+
+        for handler in self._event_handlers['on_' + event]:
+            asyncio.ensure_future(handler(*args, **kwargs))
 
     async def on_ready(self):
         print('Connected!')
@@ -29,9 +44,6 @@ class LevBot(discord.Client):
         print('Invite URL: "{}"'.format(
             discord.utils.oauth_url(self.user.id)
         ))
-
-    async def on_message(self, message):
-        self.commands.handle_message(message)
 
     async def send_message(self, destination, content=None, *args, **kwargs):
         if content and len(str(content)) > self.max_message_len:
