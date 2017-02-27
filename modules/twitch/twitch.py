@@ -102,6 +102,9 @@ class Twitch:
             pass
 
     async def send_message(self, streamer_channel, text):
+        # don't send anything long enough to clip into multiple messages
+        text = text[:self.bot.max_message_len]
+
         message = await self.bot.send_message(streamer_channel.channel, text)
 
         streamer_message = database.get_StreamerMessage()
