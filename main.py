@@ -7,6 +7,14 @@ from pushbulletlogging import PushbulletHandler
 from levbot import LevBot
 
 
+def main():
+    set_up_logging()
+
+    bot = LevBot()
+    bot.run(settings.bot_token)
+
+    remove_pushbullet_logger()
+
 def set_up_logging():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -60,9 +68,4 @@ def remove_pushbullet_logger():
 
 
 if __name__ == '__main__':
-    set_up_logging()
-
-    bot = LevBot()
-    bot.run(settings.bot_token)
-
-    remove_pushbullet_logger()
+    main()
