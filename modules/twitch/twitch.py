@@ -86,9 +86,9 @@ class Twitch:
             channel_name=escape(twitch_data['channel']['display_name']),
             game=escape(twitch_data['channel']['game']),
             title=escape(twitch_data['channel']['status']),
-            url=escape(twitch_data['channel']['url']),
-            viewers=escape(str(twitch_data['viewers'])),
-            followers=escape(str(twitch_data['channel']['followers']))
+            url=twitch_data['channel']['url'],
+            viewers=twitch_data['viewers'],
+            followers=twitch_data['channel']['followers']
         )
 
     async def send_or_update_message(self, streamer_channel, text):
