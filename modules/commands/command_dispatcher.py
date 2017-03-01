@@ -40,8 +40,8 @@ class CommandDispatcher:
         if self._handlers:
             levels += [h.user_level for h in self._handlers]
 
-        if self._child_dispatchers:
-            levels += [c.user_level for c in self._child_dispatchers.values()]
+        if self.child_dispatchers:
+            levels += [c.user_level for c in self.child_dispatchers.values()]
 
         levels = filter(None.__ne__, levels)
 
@@ -49,7 +49,7 @@ class CommandDispatcher:
 
     @property
     def is_leaf(self):
-        return not self._child_dispatchers
+        return not self.child_dispatchers
 
     def ensure_child_dispatchers(self, commands):
         command, sub_commands = (commands.split(' ', 1) + [''])[:2]
@@ -79,7 +79,7 @@ class CommandDispatcher:
         command = self._get_command_from_alias(command)
 
         try:
-            dispatcher = self._child_dispatchers[command]
+            dispatcher = self.child_dispatchers[command]
             if dispatcher.user_level <= user_level:
                 return dispatcher.get(sub_commands, user_level)
 
