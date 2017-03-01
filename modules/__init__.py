@@ -4,9 +4,14 @@ from .commands.commands import Commands
 from .twitch.twitch import Twitch
 from .console_input.console_input import ConsoleInput
 
-to_init = [
-	database,
-	Commands,
-	Twitch,
-	ConsoleInput,
-]
+
+def init(bot):
+	modules = (
+		database,
+		Commands,
+		Twitch,
+		ConsoleInput,
+	)
+
+	for module in modules:
+		module(bot)

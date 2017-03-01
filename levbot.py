@@ -16,11 +16,7 @@ class LevBot(Client):
 
         self._event_handlers = defaultdict(list)
 
-        self._load_modules()
-
-    def _load_modules(self):
-        for module in modules.to_init:
-            module(self)
+        modules.init(self)
 
     def register_event(self, event, coroutine):
         self._event_handlers[event].append(coroutine)
