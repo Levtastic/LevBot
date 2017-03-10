@@ -2,6 +2,7 @@ import discord
 import settings
 
 from collections import defaultdict
+from discord import NotFound, Forbidden
 from modules import UserLevel
 
 
@@ -42,6 +43,27 @@ class BotCommands:
             user_level=UserLevel.bot_owner,
             description=(
                 'Immediately shuts down the bot'
+            )
+        )
+        commands.register_handler(
+            'say',
+            self.cmd_say,
+            user_level=UserLevel.server_bot_admin,
+            description=(
+                'Replies in the same location as the command, with the same'
+                ' message content as the command (not including the word "say")'
+            )
+        )
+        commands.register_handler(
+            'sayd',
+            self.cmd_sayd,
+            user_level=UserLevel.server_bot_admin,
+            description=(
+                'Deletes the message containing the command and then replies in'
+                ' the same location as the command, with the same message content'
+                ' as the command (not including the word "sayd")\n'
+                'This command does nothing if the bot doesn\'t have permission'
+                ' to delete messages'
             )
         )
 
@@ -146,6 +168,17 @@ class BotCommands:
     async def cmd_quit(self, message):
         await self.bot.send_message(message.channel, 'Shutting down.')
         await self.bot.logout()
+
+    async def cmd_say(self, message, text):
+        await self.bot.send_message(message.channel, text)
+
+    async def cmd_sayd(self, message, text):
+        try:
+            await self.bot.delete_message(message)
+            await self.cmd_say(message, text)
+
+        except (NotFound, Forbidden):
+            pass
 
     async def cmd_source(self, message):
         await self.bot.send_message(message.author, settings.source_url)
