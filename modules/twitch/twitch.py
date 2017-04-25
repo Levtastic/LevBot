@@ -168,6 +168,9 @@ class Api:
         response = await self.do_query(url)
 
         data = {username: None for username in usernames}
+        if not response.get('streams'):
+            return data
+
         for stream in response['streams']:
             data[stream['channel']['name']] = stream
 
