@@ -7,7 +7,7 @@ import settings
 
 from string import Template
 from collections import defaultdict
-from concurrent.futures import CancelledError
+from concurrent.futures import CancelledError, TimeoutError
 from discord import NotFound, Forbidden
 from modules import database
 from utils import escape
@@ -44,7 +44,7 @@ class Twitch:
             ).format(ex))
             await asyncio.sleep(60)
 
-        except aiohttp.ClientError as ex:
+        except (aiohttp.ClientError, ConnectionResetError, TimeoutError) as ex:
             logging.warning('{} in Twitch.loop(): {!s}'.format(type(ex).__name__, ex))
             await asyncio.sleep(60)
 
