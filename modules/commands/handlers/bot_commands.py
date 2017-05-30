@@ -77,6 +77,17 @@ class BotCommands:
                 )
             )
 
+        if settings.donate_url:
+            commands.register_handler(
+                'donate',
+                self.cmd_donate,
+                user_level=UserLevel.user,
+                description=(
+                    'If you want to buy my dad a drink, I\'ll send you a paypal'
+                    ' donate link and you can tell him how much you appreciate me!'
+                )
+            )
+
     async def cmd_list_all_channels(self, message, channel_filter=''):
         channels = defaultdict(list)
 
@@ -182,3 +193,12 @@ class BotCommands:
 
     async def cmd_source(self, message):
         await self.bot.send_message(message.author, settings.source_url)
+
+    async def cmd_donate(self, message):
+        await self.bot.send_message(message.author, settings.donate_url + (
+            '\n\n'
+            "Donating isn't required to use me, but any money you want to send will"
+            ' be very much appreciated by my dad who spent many months to make me,'
+            ' and who still has to jump in and help me when I get confused by twitch'
+            ' API changes.'
+        ))
