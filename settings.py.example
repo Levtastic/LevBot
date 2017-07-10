@@ -1,3 +1,4 @@
+log_directory = 'logs'
 bot_token = 'token'
 db_name = 'levbot.db'
 twitch_client_id = 'clientid'

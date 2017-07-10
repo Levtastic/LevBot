@@ -28,8 +28,12 @@ def set_up_logging():
     add_pushbullet_logger(logger, formatter)
 
 def add_file_logger(logger, formatter):
-    os.makedirs('logs', exist_ok=True)
-    filename = 'logs/{}.log'.format(
+    if not settings.log_directory:
+        return None
+
+    os.makedirs(settings.log_directory, exist_ok=True)
+    filename = '{}/{}.log'.format(
+        settings.log_directory,
         datetime.now().strftime('%Y-%m-%d %H-%M-%S')
     )
     filehandler = logging.FileHandler(filename)
