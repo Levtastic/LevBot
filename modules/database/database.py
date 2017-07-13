@@ -63,7 +63,8 @@ class Database:
             if script: cursor.executescript(query)
             else: cursor.execute(query, parameters)
 
-            self.database.commit()
+            if commit:
+                self.database.commit()
 
             return cursor.lastrowid
 
