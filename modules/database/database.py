@@ -56,7 +56,7 @@ class Database:
         model = getattr(models, name)
         return model(self.bot)
 
-    def execute(self, query, parameters=(), script=False):
+    def execute(self, query, parameters=(), script=False, commit=True):
         parameters = self._convert_parameters(parameters)
 
         with closing(self.database.cursor()) as cursor:

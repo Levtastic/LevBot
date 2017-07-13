@@ -7,12 +7,14 @@ from modules import database
 
 class Model(object):
     _table_exists = False # tracked at the class-level, not the object-level
+    _table_up_to_date = False # tracked at the class-level, not the object-level
 
     def __init__(self, bot):
         self.bot = bot
 
         self._init_attributes()
         self._build_table_if_necessary()
+        self._update_table_if_necessary()
 
     def __getattr__(self, name):
         if name.startswith('get_list_by_'):
@@ -102,6 +104,61 @@ class Model(object):
     def build_table(self):
         with open(inspect.getfile(type(self))[:-3] + '.sql', 'r') as file:
             database.execute(file.read(), script=True)
+
+    def _update_table_if_necessary(self):
+        if not self.__class__._table_up_to_date:
+            if self._needs_new_columns():
+                self._update_table()
+
+            self.__class__._table_up_to_date = True
+
+    def _needs_new_columns(self):
+        query = """
+            pragma table_info('{}')
+        """.format(
+            self.table
+        )
+
+        fields = [f['name'] for f in database.fetch_all(query)]
+        fields.remove('id')
+
+        return set(fields) != set(self.fields.keys())
+
+    def _update_table(self):
+        old_data = self._get_old_data()
+
+        self._delete_table()
+        self.build_table()
+
+        for row in old_data:
+            fields = dict(self.fields)
+            fields.update(row)
+
+            database.insert(self.table, fields)
+
+    def _get_old_data(self):
+        query = """
+            SELECT
+                *
+            FROM
+                {}
+            ORDER BY
+                id ASC
+        """.format(
+            self.table
+        )
+
+        return database.fetch_all(query)
+
+    def _delete_table(self):
+        query = """
+            DROP TABLE
+                {}
+        """.format(
+            self.table
+        )
+
+        database.execute(query, commit=False)
 
     def get_list_by(self, **kwargs):
         if not kwargs:
