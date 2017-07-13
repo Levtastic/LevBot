@@ -56,17 +56,33 @@ class Twitch:
             await asyncio.sleep(300)
 
     async def do_streamer_alerts(self, streamers):
-        usernames = [streamer.username for streamer in streamers]
-        streamer_data = await self.api.get_data(usernames)
+        await self.update_ids(streamers)
+
+        ids = [streamer.twitch_id for streamer in streamers]
+        streamer_data = await self.api.get_streams(ids)
 
         for streamer in streamers:
-            data = streamer_data[streamer.username]
+            data = streamer_data[streamer.twitch_id]
 
             if data:
                 await self.handle_streaming(streamer, data)
 
             else:
                 await self.handle_not_streaming(streamer)
+
+    async def update_ids(self, streamers):
+        streamers = [streamer for streamer in streamers if not streamer.twitch_id]
+        usernames = [streamer.username for streamer in streamers]
+
+        user_data = await self.api.get_users(usernames)
+
+        for streamer in streamers:
+            if user_data[streamer.username] is None:
+                streamer.delete()
+                continue
+
+            streamer.twitch_id = str(user_data[streamer.username]['_id'])
+            streamer.save()
 
     async def handle_streaming(self, streamer, twitch_data):
         self.counter.reset(streamer.username)
@@ -143,12 +159,21 @@ class Twitch:
 
 class Api:
     def __init__(self, client_id, batch_size=100, timeout_delay=1):
-        self.headers = {'Client-ID': client_id}
+        self.url_root = 'https://api.twitch.tv/kraken/'
+        self.headers = {
+            'Accept': 'application/vnd.twitchtv.v5+json',
+            'Client-ID': client_id,
+        }
         self.timeout_delay = timeout_delay
         self.batch_size = batch_size
 
-        self.urlfmt = (
-            'https://api.twitch.tv/kraken/streams'
+        self.url_users = self.url_root + (
+            'users'
+                '?login={}'
+        )
+
+        self.url_streams = self.url_root + (
+            'streams'
                 '?limit=100'
                 '&stream_type=live'
                 '&channel={}'
@@ -156,29 +181,42 @@ class Api:
 
         self.last_timeout = time.perf_counter() - timeout_delay
 
-    async def get_data(self, usernames):
-        data = {}
-        for i in range(0, len(usernames), self.batch_size):
-            usernames_batch = usernames[i:i+self.batch_size]
-            data.update(await self.get_data_batch(usernames_batch))
-
-        return data
-
-    async def get_data_batch(self, usernames):
-        if not usernames:
-            return {}
-
-        url = self.urlfmt.format(','.join(usernames))
-        response = await self.do_query(url)
+    async def get_users(self, usernames):
+        responses = await self.get_responses(self.url_users, usernames)
 
         data = {username: None for username in usernames}
-        if not response.get('streams'):
-            return data
-
-        for stream in response['streams']:
-            data[stream['channel']['name']] = stream
+        for response in responses:
+            for user in response.get('users', []):
+                data[user['name']] = user
 
         return data
+
+    async def get_streams(self, uids):
+        responses = await self.get_responses(self.url_streams, uids)
+
+        data = {uid: None for uid in uids}
+        for response in responses:
+            for stream in response.get('streams', []):
+                data[str(stream['channel']['_id'])] = stream
+
+        return data
+
+    async def get_responses(self, url, pieces):
+        responses = []
+        for i in range(0, len(pieces), self.batch_size):
+            pieces_batch = pieces[i:i+self.batch_size]
+            responses.append(await self.get_responses_batch(url, pieces_batch))
+
+        return responses
+
+    async def get_responses_batch(self, url, pieces):
+        if not pieces:
+            return {}
+
+        url = url.format(','.join(pieces))
+        response = await self.do_query(url)
+
+        return response
 
     async def do_query(self, url):
         await self.timeout()

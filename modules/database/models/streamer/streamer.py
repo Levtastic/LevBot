@@ -16,9 +16,10 @@ class Streamer(Model):
         return 'streamers'
 
     def define_fields(self):
-        return (
-            'username',
-        )
+        return {
+            'twitch_id': '',
+            'username': None,
+        }
 
     def save(self):
         super().save()
