@@ -1,4 +1,6 @@
 import discord
+import re
+
 from modules import database
 from modules import UserLevel
 from .. import CommandException
@@ -10,6 +12,8 @@ class AlertCommands:
 
         self.bot = commands.bot
         self.register(commands)
+
+        self.username_pattern = re.compile(r'^[a-zA-Z0-9_]{4,25}$')
 
     def register(self, commands):
         commands.register_handler(
@@ -56,6 +60,12 @@ class AlertCommands:
         )
 
     async def cmd_add_alert(self, message, username, channel_name='here', template=''):
+        if not self.username_pattern.fullmatch(username):
+            raise CommandException(
+                'Twitch usernames can only be made from letters, numbers and'
+                ' underscores, and must be between 4 and 25 characters long.'
+            )
+
         streamer = self.ensure_streamer(username)
 
         channel = self.get_channel(channel_name, message)
