@@ -247,6 +247,10 @@ class AlertCommands:
         ))
 
     def get_alert_channel_text(self, streamer_channel):
+        if not streamer_channel.channel:
+            streamer_channel.delete()
+            return ''
+
         channel_text = '`{0.streamer.username}` in `{1}`'.format(
             streamer_channel,
             self.get_channel_name(streamer_channel.channel)
