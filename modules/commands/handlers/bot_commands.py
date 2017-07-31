@@ -114,7 +114,7 @@ class BotCommands:
         if not channels:
             return 'No channels found'
 
-        return '.\n{}'.format('\n'.join(self.get_channels_text_pieces(channels)))
+        return '\u200C\n{}'.format('\n'.join(self.get_channels_text_pieces(channels)))
 
     def get_channels_text_pieces(self, channels):
         for server in channels.keys():
@@ -151,7 +151,7 @@ class BotCommands:
         if not members:
             return 'No users found'
 
-        return '.\n{}'.format('\n'.join(self.get_users_text_pieces(members)))
+        return '\u200C\n{}'.format('\n'.join(self.get_users_text_pieces(members)))
 
     def get_users_text_pieces(self, members):
         for server in members.keys():

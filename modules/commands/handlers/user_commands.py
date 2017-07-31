@@ -240,7 +240,7 @@ class UserCommands:
         if not pieces:
             return 'No `users` found.'
 
-        return '.\n{}'.format('\n'.join(pieces))
+        return '\u200C\n{}'.format('\n'.join(pieces))
 
     def check_listtype(self, userserver, listtype):
         if listtype == 'admin':

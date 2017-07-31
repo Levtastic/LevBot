@@ -218,7 +218,7 @@ class ModelCommands:
 
         await self.bot.send_message(
             message.channel,
-            '.\n' + '\n'.join(str(model) for model in models)
+            '\u200C\n' + '\n'.join(str(model) for model in models)
         )
 
     def filter_model(self, model, pairs):

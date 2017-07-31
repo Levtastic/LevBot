@@ -252,7 +252,7 @@ class AlertCommands:
 
         alertfmt = '`{0.streamer.username}` in `{1}`'
 
-        return '.\n{}'.format('\n'.join(
+        return '\u200C\n{}'.format('\n'.join(
             self.get_alert_channel_text(channel) for channel in streamer_channels
         ))
 
