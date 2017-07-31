@@ -62,6 +62,10 @@ class Twitch:
         streamer_data = await self.api.get_streams(ids)
 
         for streamer in streamers:
+            if not streamer.streamer_channels:
+                streamer.delete()
+                continue
+
             data = streamer_data[streamer.twitch_id]
 
             if data:
