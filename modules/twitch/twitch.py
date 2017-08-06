@@ -230,7 +230,7 @@ class Api:
                 if not 200 <= result.status < 300:
                     raise discord.HTTPException(result, 'Error fetching twitch api')
 
-                return await result.json()
+                return await result.json(encoding='utf-8')
 
     async def timeout(self):
         time_since = time.perf_counter() - self.last_timeout
