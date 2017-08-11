@@ -108,7 +108,7 @@ class Twitch:
     def apply_template(self, template, twitch_data):
         return Template(template).safe_substitute(
             channel_name=escape(twitch_data['channel']['display_name']),
-            game=escape(twitch_data['channel']['game']),
+            game=escape(twitch_data['channel']['game']) or 'nothing',
             title=escape(twitch_data['channel']['status']),
             url=twitch_data['channel']['url'],
             viewers=twitch_data['viewers'],
