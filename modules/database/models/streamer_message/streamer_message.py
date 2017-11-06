@@ -10,7 +10,7 @@ class StreamerMessage(Model):
         return database.get_Streamer_by_id(self.streamer_id)
 
     def channel(self):
-        return self._streamer_channel.channel
+        return self.streamer_channel.channel
 
     @cached_slot_property('_streamer_channel')
     def streamer_channel(self):
