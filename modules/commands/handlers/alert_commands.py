@@ -70,6 +70,9 @@ class AlertCommands:
 
         channel = self.get_channel(channel_name, message)
 
+        if channel.is_private:
+            raise CommandException('Alerts in private channels are currently disabled.')
+
         self.check_permission(message.author, channel)
 
         streamer_channel = self.build_streamer_channel(
