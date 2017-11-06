@@ -9,6 +9,7 @@ class StreamerMessage(Model):
     def streamer(self):
         return database.get_Streamer_by_id(self.streamer_id)
 
+    @property
     def channel(self):
         return self.streamer_channel.channel
 
