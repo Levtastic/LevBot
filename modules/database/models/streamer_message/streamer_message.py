@@ -9,13 +9,8 @@ class StreamerMessage(Model):
     def streamer(self):
         return database.get_Streamer_by_id(self.streamer_id)
 
-    @cached_slot_property('_channel')
     def channel(self):
-        try:
-            return self.bot.get_channel(self.channel_did)
-
-        except (NotFound, Forbidden):
-            return None
+        return self._streamer_channel.channel
 
     @cached_slot_property('_streamer_channel')
     def streamer_channel(self):
