@@ -93,5 +93,5 @@ class PushbulletHandler(Handler):
             c.send(data.encode('utf-8'))
             c.getresponse()
 
-        except http.client.HTTPException:
+        except client.HTTPException:
             self.handleError(record)
