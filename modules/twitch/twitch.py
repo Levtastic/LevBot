@@ -130,7 +130,11 @@ class Twitch:
         # don't send anything long enough to clip into multiple messages
         text = text[:self.bot.max_message_len]
 
-        message = await self.bot.send_message(streamer_channel.channel, text)
+        channel = streamer_channel.channel
+        if channel is None:
+            return
+
+        message = await self.bot.send_message(channel, text)
 
         streamer_message = database.get_StreamerMessage()
         streamer_message.channel_did = streamer_channel.channel.id
