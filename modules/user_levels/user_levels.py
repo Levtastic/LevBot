@@ -64,7 +64,7 @@ class UserLevel(OrderedEnum):
         else:
             channel = channel_or_server
 
-        if channel.is_private:
+        if channel and channel.is_private:
             return cls._get_private_level(user, channel)
 
         return cls._get_server_level(user, channel, db_user)
@@ -86,16 +86,16 @@ class UserLevel(OrderedEnum):
         if not member:
             return cls.no_access
 
-        if member == channel.server.owner:
+        if channel and member == channel.server.owner:
             return cls.server_owner
 
         if db_user and db_user.is_blacklisted(channel.server):
             return cls.server_blacklisted
 
-        if channel.permissions_for(member).manage_channels:
+        if channel and channel.permissions_for(member).manage_channels:
             return cls.server_admin
 
-        if db_user and db_user.is_admin(channel.server):
+        if channel and db_user and db_user.is_admin(channel.server):
             return cls.server_bot_admin
 
         return cls.server_user
