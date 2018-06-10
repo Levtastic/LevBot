@@ -2,6 +2,7 @@ import discord
 import settings
 
 from collections import defaultdict
+from datetime import datetime
 from discord import NotFound, Forbidden
 from modules import UserLevel
 
@@ -64,6 +65,18 @@ class BotCommands:
                 ' as the command (not including the word "sayd")\n'
                 'This command does nothing if the bot doesn\'t have permission'
                 ' to delete messages'
+            )
+        )
+        commands.register_handler(
+            'backup',
+            self.cmd_backup,
+            user_level=UserLevel.server_bot_admin,
+            description=(
+                'Replies in private with the current timestamp (in'
+                ' international ISO format) and the current database file'
+                ' attached. Changes to the database made in the last second'
+                ' may not be reflected in the file, as they may not have'
+                ' been committed yet.'
             )
         )
 
@@ -190,6 +203,13 @@ class BotCommands:
 
         except (NotFound, Forbidden):
             pass
+
+    async def cmd_backup(self, message):
+        await self.bot.send_file(
+            message.author,
+            settings.db_name,
+            content='BACKUP ' + datetime.now().isoformat(' ')
+        )
 
     async def cmd_source(self, message):
         await self.bot.send_message(message.author, settings.source_url)
