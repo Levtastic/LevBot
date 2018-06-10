@@ -1,7 +1,5 @@
 import inspect
-import settings
 
-from modules import database
 from modules import UserLevel
 from . import CommandDispatcher, Handler
 from . import handlers

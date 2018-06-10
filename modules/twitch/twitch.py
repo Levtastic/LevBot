@@ -181,14 +181,14 @@ class Api:
 
         self.url_users = self.url_root + (
             'users'
-                '?login={}'
+            '?login={}'
         )
 
         self.url_streams = self.url_root + (
             'streams'
-                '?limit=100'
-                '&stream_type=live'
-                '&channel={}'
+            '?limit=100'
+            '&stream_type=live'
+            '&channel={}'
         )
 
         self.last_timeout = time.perf_counter() - timeout_delay
@@ -216,7 +216,7 @@ class Api:
     async def get_responses(self, url, pieces):
         responses = []
         for i in range(0, len(pieces), self.batch_size):
-            pieces_batch = pieces[i:i+self.batch_size]
+            pieces_batch = pieces[i:i + self.batch_size]
             responses.append(await self.get_responses_batch(url, pieces_batch))
 
         return responses

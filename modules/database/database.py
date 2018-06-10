@@ -60,8 +60,11 @@ class Database:
         parameters = self._convert_parameters(parameters)
 
         with closing(self.database.cursor()) as cursor:
-            if script: cursor.executescript(query)
-            else: cursor.execute(query, parameters)
+            if script:
+                cursor.executescript(query)
+
+            else:
+                cursor.execute(query, parameters)
 
             if commit:
                 self.database.commit()
@@ -97,7 +100,9 @@ class Database:
             return self.fetch_row(query, parameters)[0]
 
         except IndexError:
-            if args: return args[0]
+            if args:
+                return args[0]
+
             return kwargs.pop('default')
 
     def insert(self, table, fields):

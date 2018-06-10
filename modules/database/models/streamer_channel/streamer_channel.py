@@ -40,7 +40,7 @@ class StreamerChannel(Model):
         return {
             'streamer_id': None,
             'channel_did': None,
-            'template':    '',
+            'template': '',
         }
 
     def delete(self):

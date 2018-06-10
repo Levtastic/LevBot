@@ -3,12 +3,11 @@
 from logging import Handler
 from logging import LogRecord
 from logging import Formatter
-from logging import Logger
 
 try:
     import json
 except ImportError:
-    import simplejson
+    import simplejson as json
 
 try:
     import http.client as client

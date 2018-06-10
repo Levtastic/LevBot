@@ -1,7 +1,4 @@
-import discord
-from modules import database
 from modules import UserLevel
-from .. import CommandException
 
 
 class HelpCommands:

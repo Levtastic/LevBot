@@ -1,4 +1,3 @@
-import discord
 import re
 
 from modules import database
@@ -78,7 +77,7 @@ class AlertCommands:
 
         self.check_permission(message.author, channel)
 
-        streamer_channel = self.build_streamer_channel(
+        self.build_streamer_channel(
             username,
             streamer,
             channel,
@@ -260,8 +259,6 @@ class AlertCommands:
     def get_alerts_text(self, streamer_channels):
         if not streamer_channels:
             return 'No `alerts` found'
-
-        alertfmt = '`{0.streamer.username}` in `{1}`'
 
         return '\u200C\n{}'.format('\n'.join(
             self.get_alert_channel_text(c) for c in streamer_channels

@@ -113,7 +113,7 @@ class ModelCommands:
             field, value = pair.split('=', 1)
             field, value = field.strip(), value.strip()
 
-            if not field in model.fields:
+            if field not in model.fields:
                 raise CommandException('Unrecognised field `{}`'.format(field))
 
             yield field, value
@@ -206,7 +206,7 @@ class ModelCommands:
                 pairs = list(self.get_attribute_pairs(attributes, model))
 
             except ValueError:
-                raise CommandException(self.get_syntax(add, model_name))
+                raise CommandException(self.get_syntax('list', model_name))
 
         else:
             pairs = []

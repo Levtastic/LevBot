@@ -1,4 +1,3 @@
-import discord
 from modules import database
 from modules import UserLevel
 from .. import CommandException
@@ -163,7 +162,7 @@ class UserCommands:
         if not userserver:
             userserver = database.get_UserServer()
             userserver.server_did = server.id
-            userserver.user_id=user.id
+            userserver.user_id = user.id
             userserver.save()
 
         return userserver
