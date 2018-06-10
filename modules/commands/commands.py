@@ -66,8 +66,8 @@ class Commands:
 
     def _get_command(self, message):
         prefixes = (
-            '<@{.id}>'.format(self.bot.user), # standard mention
-            '<@!{.id}>'.format(self.bot.user) # nickname mention
+            '<@{.id}>'.format(self.bot.user),  # standard mention
+            '<@!{.id}>'.format(self.bot.user)  # nickname mention
         )
 
         for prefix in prefixes:

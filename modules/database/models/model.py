@@ -6,8 +6,9 @@ from modules import database
 
 
 class Model(object):
-    _table_exists = False # tracked at the class-level, not the object-level
-    _table_up_to_date = False # tracked at the class-level, not the object-level
+    # These attributes are tracked at the class-level, not the object-level
+    _table_exists = False
+    _table_up_to_date = False
 
     def __init__(self, bot):
         self.bot = bot

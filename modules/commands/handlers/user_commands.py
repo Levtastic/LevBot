@@ -50,18 +50,20 @@ class UserCommands:
             self.cmd_list_users,
             user_level=self.user_level,
             description=(
-                'Lists users with admin or blacklisted status given through the'
-                ' `add user` command.\n'
-                'If you leave out the server name parameter, the bot will reply with'
-                ' **ALL** users you have permission to view in all servers where you'
-                ' are considered an admin by the bot.\n'
-                'To only view users for a specific server, name the server or use'
-                ' the keyword "here" in the `server name` parameter slot.\n'
+                'Lists users with admin or blacklisted status given through'
+                ' the `add user` command.\n'
+                'If you leave out the server name parameter, the bot will'
+                ' reply with **ALL** users you have permission to view in all'
+                ' servers where you are considered an admin by the bot.\n'
+                'To only view users for a specific server, name the server or'
+                ' use the keyword "here" in the `server name` parameter'
+                ' slot.\n'
                 '\n' + shared_info
             )
         )
 
-    async def cmd_add_user(self, message, username, usertype, servername='here'):
+    async def cmd_add_user(self, message, username, usertype,
+                           servername='here'):
         server = self.get_server(servername, message)
         duser = self.get_discord_user(server, username)
         user = self.ensure_user(server, duser)
@@ -166,7 +168,8 @@ class UserCommands:
 
         return userserver
 
-    async def cmd_remove_user(self, message, username, usertype, servername='here'):
+    async def cmd_remove_user(self, message, username, usertype,
+                              servername='here'):
         server = self.get_server(servername, message)
         duser = self.get_discord_user(server, username)
         user = self.ensure_user(server, duser)
@@ -209,7 +212,8 @@ class UserCommands:
         if not user.user_servers:
             user.delete()
 
-    async def cmd_list_users(self, message, listtype='both', servername='', username=''):
+    async def cmd_list_users(self, message, listtype='both', servername='',
+                             username=''):
         users = database.get_User_list()
 
         if servername:
@@ -217,7 +221,8 @@ class UserCommands:
         else:
             server = None
 
-        text = await self.get_list_text(users, username, listtype, server, message)
+        text = await self.get_list_text(users, username, listtype, server,
+                                        message)
 
         await self.bot.send_message(message.channel, text)
 
@@ -235,7 +240,9 @@ class UserCommands:
                 if not await self.check_username(user, username):
                     continue
 
-                pieces.append(await self.get_list_text_piece(user, userserver, server))
+                pieces.append(
+                    await self.get_list_text_piece(user, userserver, server)
+                )
 
         if not pieces:
             return 'No `users` found.'
@@ -272,7 +279,7 @@ class UserCommands:
         if userserver.blacklisted:
             piece += ' `blacklisted`'
 
-        if not server: # user didn't specify a specific server
+        if not server:  # user didn't specify a specific server
             piece = '`{0.server.name}` {1}'.format(userserver, piece)
 
         return piece

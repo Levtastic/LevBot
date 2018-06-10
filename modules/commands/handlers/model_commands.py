@@ -68,7 +68,9 @@ class ModelCommands:
             fields += '<key> = <value>'
 
         else:
-            fields += ', '.join('{} = <value>'.format(field) for field in model.fields)
+            fields += ', '.join(
+                '{} = <value>'.format(field) for field in model.fields
+            )
 
         return '{} {} {}'.format(command, model_name, fields)
 
@@ -164,7 +166,8 @@ class ModelCommands:
 
         if len(models) != 1:
             raise CommandException(
-                'This operation only works on one {} at a time, but we found {}'.format(
+                ('This operation only works on one {} at a time,'
+                 ' but we found {}').format(
                     type(model).__name__,
                     len(models)
                 )

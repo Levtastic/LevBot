@@ -95,7 +95,10 @@ class CommandDispatcher:
     def dispatch(self, command, message):
         user_level = UserLevel.get(message.author, message.channel)
         dispatcher, attributes = self.get(command, user_level)
-        handlers = [h for h in dispatcher.handlers if h.user_level <= user_level]
+        handlers = [h
+                    for h
+                    in dispatcher.handlers
+                    if h.user_level <= user_level]
 
         for handler in handlers:
             asyncio.ensure_future(self._wrapper(
@@ -133,7 +136,10 @@ class CommandDispatcher:
 
         try:
             if len(signature.parameters) > 1:
-                attributes = attributes.split(' ', len(signature.parameters) - 2)
+                attributes = attributes.split(
+                    ' ',
+                    len(signature.parameters) - 2
+                )
                 return signature.bind(
                     message,
                     *[att for att in attributes if att is not '']

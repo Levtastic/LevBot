@@ -35,7 +35,7 @@ class ConsoleInput:
 
     async def loop(self):
         await self.bot.wait_until_ready()
-        await asyncio.sleep(0) # let other loops begin before this one
+        await asyncio.sleep(0)  # let other loops begin before this one
 
         self.is_ready.set()
 
@@ -51,7 +51,9 @@ class ConsoleInput:
             try:
                 exec(
                     'async def console(bot):\n' +
-                    ' {}\n'.format('\n '.join(line for line in message.split('\n'))) +
+                    ' {}\n'.format('\n '.join(
+                        line for line in message.split('\n'))
+                    ) +
                     'fut = asyncio.ensure_future(console(self.bot))\n' +
                     'fut.add_done_callback(self.on_complete)'
                 )
@@ -59,7 +61,8 @@ class ConsoleInput:
                 print('Executing code...')
                 self.is_ready.clear()
 
-            except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
+            except (KeyboardInterrupt, SystemExit, GeneratorExit,
+                    CancelledError):
                 raise
 
             except:

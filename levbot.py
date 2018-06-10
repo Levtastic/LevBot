@@ -35,15 +35,23 @@ class LevBot(Client):
 
     async def send_message(self, destination, content=None, *args, **kwargs):
         if content and len(str(content)) > self.max_message_len:
-            return await self._split_message(destination, str(content), *args, **kwargs)
+            return await self._split_message(
+                destination, str(content), *args, **kwargs
+            )
 
-        return await super().send_message(destination, content, *args, **kwargs)
+        return await super().send_message(
+            destination, content, *args, **kwargs
+        )
 
     async def _split_message(self, destination, content, *args, **kwargs):
         clipped, remainder = self._get_split_pieces(content)
 
-        message1 = await self.send_message(destination, clipped, *args, **kwargs)
-        message2 = await self.send_message(destination, remainder, *args, **kwargs)
+        message1 = await self.send_message(
+            destination, clipped, *args, **kwargs
+        )
+        message2 = await self.send_message(
+            destination, remainder, *args, **kwargs
+        )
 
         return tuple(chain((message1, message2)))
 

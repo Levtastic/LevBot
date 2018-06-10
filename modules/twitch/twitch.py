@@ -45,7 +45,10 @@ class Twitch:
             await asyncio.sleep(60)
 
         except (aiohttp.ClientError, ConnectionResetError, TimeoutError) as ex:
-            logging.warning('{} in Twitch.loop(): {!s}'.format(type(ex).__name__, ex))
+            logging.warning('{} in Twitch.loop(): {!s}'.format(
+                type(ex).__name__,
+                ex
+            ))
             await asyncio.sleep(60)
 
         except (KeyboardInterrupt, SystemExit, GeneratorExit, CancelledError):
@@ -75,8 +78,8 @@ class Twitch:
                 await self.handle_not_streaming(streamer)
 
     async def update_ids(self, streamers):
-        streamers = [streamer for streamer in streamers if not streamer.twitch_id]
-        usernames = [streamer.username for streamer in streamers]
+        streamers = [s for s in streamers if not s.twitch_id]
+        usernames = [s.username for s in streamers]
 
         user_data = await self.api.get_users(usernames)
 
@@ -160,7 +163,8 @@ class Twitch:
         )
 
     async def handle_not_streaming(self, streamer):
-        if streamer.streamer_messages and self.counter.click(streamer.username):
+        if (streamer.streamer_messages and
+                self.counter.click(streamer.username)):
             for streamer_message in streamer.streamer_messages:
                 streamer_message.delete()
 
@@ -232,7 +236,10 @@ class Api:
         with aiohttp.ClientSession() as session:
             async with session.get(url, headers=self.headers) as result:
                 if not 200 <= result.status < 300:
-                    raise discord.HTTPException(result, 'Error fetching twitch api')
+                    raise discord.HTTPException(
+                        result,
+                        'Error fetching twitch api'
+                    )
 
                 return await result.json(encoding='utf-8')
 

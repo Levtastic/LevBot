@@ -37,14 +37,14 @@ class Database:
 
         model = self.get_initialised_model(model_name)
 
-        if attrs.pop(0) == 'by': # or 'list'
+        if attrs.pop(0) == 'by':  # or 'list'
             func_name = 'get_by_{}'.format('_'.join(attrs))
             return getattr(model, func_name)
 
         if not attrs:
             return model.get_all
 
-        attrs.pop(0) # 'by'
+        attrs.pop(0)  # 'by'
 
         func_name = 'get_list_by_{}'.format('_'.join(attrs))
 
@@ -122,8 +122,12 @@ class Database:
             fields.update(where_args)
 
         else:
-            fields.update({'where_' + key: value for key, value in kwargs.items()})
-            where_query = ' AND '.join('{0} = :where_{0}'.format(name) for name in kwargs.keys())
+            fields.update({
+                'where_' + key: value for key, value in kwargs.items()
+            })
+            where_query = ' AND '.join(
+                '{0} = :where_{0}'.format(name) for name in kwargs.keys()
+            )
 
         query = query.format(
             table,
@@ -132,5 +136,6 @@ class Database:
         )
 
         return self.execute(query, fields)
+
 
 sys.modules[__name__] = Database()

@@ -47,7 +47,8 @@ class PushbulletHandler(Handler):
                  body_format=Formatter('%(msg)s')):
 
         assert isinstance(access_token, str)
-        assert isinstance(target, PushbulletHandlerTarget) or callable(target) or target is None
+        assert (isinstance(target, PushbulletHandlerTarget) or
+                callable(target) or target is None)
         assert isinstance(title_format, Formatter)
         assert isinstance(body_format, Formatter)
 

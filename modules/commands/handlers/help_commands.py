@@ -78,7 +78,9 @@ class HelpCommands:
             command = command + ' '
 
         subcmds = self.get_sub_command_names(dispatcher, user_level)
-        subcmds_text = '\n'.join('{}{}'.format(command, subcmd) for subcmd in subcmds)
+        subcmds_text = '\n'.join(
+            '{}{}'.format(command, subcmd) for subcmd in subcmds
+        )
 
         if subcmds_text:
             return (

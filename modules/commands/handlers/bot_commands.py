@@ -52,7 +52,8 @@ class BotCommands:
             user_level=UserLevel.server_bot_admin,
             description=(
                 'Replies in the same location as the command, with the same'
-                ' message content as the command (not including the word "say")'
+                ' message content as the command (not including the word'
+                ' "say")'
             )
         )
         commands.register_handler(
@@ -60,9 +61,9 @@ class BotCommands:
             self.cmd_sayd,
             user_level=UserLevel.server_bot_admin,
             description=(
-                'Deletes the message containing the command and then replies in'
-                ' the same location as the command, with the same message content'
-                ' as the command (not including the word "sayd")\n'
+                'Deletes the message containing the command and then replies'
+                ' in the same location as the command, with the same message'
+                ' content as the command (not including the word "sayd")\n'
                 'This command does nothing if the bot doesn\'t have permission'
                 ' to delete messages'
             )
@@ -96,8 +97,9 @@ class BotCommands:
                 self.cmd_donate,
                 user_level=UserLevel.user,
                 description=(
-                    'If you want to buy my dad a drink, I\'ll send you a paypal'
-                    ' donate link and you can tell him how much you appreciate me!'
+                    'If you want to buy my dad a drink, I\'ll send you a'
+                    ' paypal donate link and you can tell him how much you'
+                    ' appreciate me!'
                 )
             )
 
@@ -127,7 +129,9 @@ class BotCommands:
         if not channels:
             return 'No channels found'
 
-        return '\u200C\n{}'.format('\n'.join(self.get_channels_text_pieces(channels)))
+        return '\u200C\n{}'.format('\n'.join(
+            self.get_channels_text_pieces(channels))
+        )
 
     def get_channels_text_pieces(self, channels):
         for server in channels.keys():
@@ -164,7 +168,9 @@ class BotCommands:
         if not members:
             return 'No users found'
 
-        return '\u200C\n{}'.format('\n'.join(self.get_users_text_pieces(members)))
+        return '\u200C\n{}'.format('\n'.join(
+            self.get_users_text_pieces(members))
+        )
 
     def get_users_text_pieces(self, members):
         for server in members.keys():
@@ -217,8 +223,8 @@ class BotCommands:
     async def cmd_donate(self, message):
         await self.bot.send_message(message.author, settings.donate_url + (
             '\n\n'
-            "Donating isn't required to use me, but any money you want to send will"
-            ' be very much appreciated by my dad who spent many months to make me,'
-            ' and who still has to jump in and help me when I get confused by twitch'
-            ' API changes.'
+            "Donating isn't required to use me, but any money you want to send"
+            ' will be very much appreciated by my dad who spent many months to'
+            ' make me, and who still has to jump in and help me when I get'
+            ' confused by twitch API changes.'
         ))

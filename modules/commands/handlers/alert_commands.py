@@ -33,7 +33,8 @@ class AlertCommands:
                 '${title}\n'
                 '${url}```'
                 '\n'
-                'Possible information you can include in your own templates is:\n'
+                'Possible information you can include in your own'
+                ' templates is:\n'
                 '    `${channel_name}`\n'
                 '    `${game}`\n'
                 '    `${title}`\n'
@@ -59,7 +60,8 @@ class AlertCommands:
             )
         )
 
-    async def cmd_add_alert(self, message, username, channel_name='here', template=''):
+    async def cmd_add_alert(self, message, username, channel_name='here',
+                            template=''):
         if not self.username_pattern.fullmatch(username):
             raise CommandException(
                 'Twitch usernames can only be made from letters, numbers and'
@@ -71,7 +73,8 @@ class AlertCommands:
         channel = self.get_channel(channel_name, message)
 
         if channel.is_private:
-            raise CommandException('Alerts in private channels are currently disabled.')
+            raise CommandException('Alerts in private channels are currently'
+                                   ' disabled.')
 
         self.check_permission(message.author, channel)
 
@@ -132,7 +135,8 @@ class AlertCommands:
 
     def check_permission(self, author, channel):
         if UserLevel.get(author, channel) < self.user_level:
-            raise CommandException('You do not have access to alerts in that channel')
+            raise CommandException('You do not have access to alerts in that'
+                                   ' channel')
 
         if not self.can_send_in(channel):
             raise CommandException(
@@ -166,7 +170,9 @@ class AlertCommands:
 
     def get_channel_name(self, channel):
         if channel.is_private:
-            return 'Private ({})'.format(', '.join(r.name for r in (channel.recipients)))
+            return 'Private ({})'.format(
+                ', '.join(r.name for r in (channel.recipients))
+            )
 
         return '{}#{}'.format(channel.server.name, channel.name)
 
@@ -185,7 +191,8 @@ class AlertCommands:
 
         self.check_permission(message.author, channel)
 
-        streamer_channel = self.get_streamer_channel(username, streamer, channel)
+        streamer_channel = self.get_streamer_channel(username, streamer,
+                                                     channel)
 
         streamer_channel.delete()
 
@@ -240,7 +247,8 @@ class AlertCommands:
             if username_filter not in streamer.username.lower():
                 continue
 
-            yield from self.get_streamer_channels_by_streamer(message, streamer)
+            yield from self.get_streamer_channels_by_streamer(message,
+                                                              streamer)
 
     def get_streamer_channels_by_streamer(self, message, streamer):
         for streamer_channel in streamer.streamer_channels:
@@ -256,7 +264,7 @@ class AlertCommands:
         alertfmt = '`{0.streamer.username}` in `{1}`'
 
         return '\u200C\n{}'.format('\n'.join(
-            self.get_alert_channel_text(channel) for channel in streamer_channels
+            self.get_alert_channel_text(c) for c in streamer_channels
         ))
 
     def get_alert_channel_text(self, streamer_channel):

@@ -15,6 +15,7 @@ def main():
 
     remove_pushbullet_logger()
 
+
 def set_up_logging():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -26,6 +27,7 @@ def set_up_logging():
     add_file_logger(logger, formatter)
     add_console_logger(logger, formatter)
     add_pushbullet_logger(logger, formatter)
+
 
 def add_file_logger(logger, formatter):
     if not settings.log_directory:
@@ -43,6 +45,7 @@ def add_file_logger(logger, formatter):
 
     return filehandler
 
+
 def add_console_logger(logger, formatter):
     streamhandler = logging.StreamHandler()
     streamhandler.setLevel(logging.ERROR)
@@ -50,6 +53,7 @@ def add_console_logger(logger, formatter):
     logger.addHandler(streamhandler)
 
     return streamhandler
+
 
 def add_pushbullet_logger(logger, formatter):
     if not settings.pushbullet_token:
@@ -63,6 +67,7 @@ def add_pushbullet_logger(logger, formatter):
     logger.addHandler(pushbullethandler)
 
     return pushbullethandler
+
 
 def remove_pushbullet_logger():
     logger = logging.getLogger()
