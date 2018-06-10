@@ -95,10 +95,6 @@ class Twitch:
         self.counter.reset(streamer.username)
 
         for streamer_channel in streamer.streamer_channels:
-            if streamer_channel.channel is None:
-                streamer_channel.delete()
-                continue
-
             template = streamer_channel.template or (
                 '@here ${channel_name} is now live playing ${game}:\n'
                 '${title}\n'
